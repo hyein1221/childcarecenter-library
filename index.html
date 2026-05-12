@@ -11,7 +11,7 @@
     h1 { margin-bottom: 20px; }
     .box { background:white; padding:20px; border:1px solid #ddd; max-width:420px; margin-bottom:20px; }
     input, select { padding:12px; width:100%; margin-bottom:10px; box-sizing:border-box; font-size:14px; }
-    button { padding:10px 14px; cursor:pointer; border:1px solid #ccc; background:white; }
+    button { padding:10px 14px; cursor:pointer; border:1px solid #ccc; background:white; margin:2px; }
     .hidden { display:none; }
     .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
     table { width:100%; border-collapse:collapse; background:white; table-layout:fixed; }
@@ -19,6 +19,7 @@
     th { background:#f1f1f1; text-align:center; }
     .status, .btn-cell { text-align:center; }
     .message { color:#333; font-size:14px; }
+    .notice { font-size:13px; color:#666; }
   </style>
 </head>
 
@@ -26,17 +27,17 @@
 
 <h1>탕정삼성어린이집 도서관리 시스템</h1>
 
-<!-- 로그인 화면 -->
 <div id="login-screen" class="box">
   <h2>로그인</h2>
   <input id="login-username" placeholder="아이디" />
   <input id="login-password" type="password" placeholder="비밀번호" />
   <button id="login-btn">로그인</button>
   <button id="signup-open-btn">회원가입</button>
+  <button id="find-id-btn">아이디 찾기</button>
+  <p class="notice">비밀번호 초기화는 관리자에게 문의해주세요.</p>
   <p id="login-message" class="message"></p>
 </div>
 
-<!-- 회원가입 화면 -->
 <div id="signup-screen" class="box hidden">
   <h2>회원가입</h2>
   <input id="signup-name" placeholder="이름" />
@@ -61,7 +62,28 @@
   <p id="signup-message" class="message"></p>
 </div>
 
-<!-- 도서 목록 화면 -->
+<div id="find-id-screen" class="box hidden">
+  <h2>아이디 찾기</h2>
+  <input id="find-name" placeholder="이름" />
+
+  <select id="find-age">
+    <option value="">연령 선택</option>
+    <option value="만1세">만1세</option>
+    <option value="만2세">만2세</option>
+    <option value="만3세">만3세</option>
+    <option value="만4세">만4세</option>
+    <option value="만5세">만5세</option>
+  </select>
+
+  <select id="find-class">
+    <option value="">반 선택</option>
+  </select>
+
+  <button id="find-id-submit-btn">아이디 찾기</button>
+  <button id="find-id-back-btn">로그인으로 돌아가기</button>
+  <p id="find-id-message" class="message"></p>
+</div>
+
 <div id="app-screen" class="hidden">
   <div class="top">
     <strong id="user-info"></strong>
@@ -108,12 +130,18 @@
 
   function showLogin() {
     document.getElementById("signup-screen").classList.add("hidden");
+    document.getElementById("find-id-screen").classList.add("hidden");
     document.getElementById("login-screen").classList.remove("hidden");
   }
 
-  function updateClassOptions() {
-    const age = document.getElementById("signup-age").value;
-    const classSelect = document.getElementById("signup-class");
+  function showFindId() {
+    document.getElementById("login-screen").classList.add("hidden");
+    document.getElementById("find-id-screen").classList.remove("hidden");
+  }
+
+  function updateClassOptions(targetAgeId, targetClassId) {
+    const age = document.getElementById(targetAgeId).value;
+    const classSelect = document.getElementById(targetClassId);
 
     classSelect.innerHTML = `<option value="">반 선택</option>`;
 
@@ -135,10 +163,21 @@
       return;
     }
 
+    const { data: existingUser } = await supabaseClient
+      .from("users")
+      .select("username")
+      .eq("username", username)
+      .maybeSingle();
+
+    if (existingUser) {
+      document.getElementById("signup-message").innerText = "이미 사용 중인 아이디입니다.";
+      return;
+    }
+
     const { error } = await supabaseClient.from("users").insert([{
-      name: name,
-      username: username,
-      password: password,
+      name,
+      username,
+      password,
       class_name: className,
       role: "teacher",
       approval_status: "pending"
@@ -153,6 +192,30 @@
       "가입 신청 완료! 관리자 승인 후 로그인할 수 있습니다.";
   }
 
+  async function findId() {
+    const name = document.getElementById("find-name").value.trim();
+    const className = document.getElementById("find-class").value;
+
+    if (!name || !className) {
+      document.getElementById("find-id-message").innerText = "모든 항목을 입력해주세요.";
+      return;
+    }
+
+    const { data, error } = await supabaseClient
+      .from("users")
+      .select("username")
+      .eq("name", name)
+      .eq("class_name", className)
+      .maybeSingle();
+
+    if (error || !data) {
+      document.getElementById("find-id-message").innerText = "일치하는 정보가 없습니다.";
+      return;
+    }
+
+    document.getElementById("find-id-message").innerText = `아이디: ${data.username}`;
+  }
+
   async function login() {
     const username = document.getElementById("login-username").value.trim();
     const password = document.getElementById("login-password").value.trim();
@@ -165,14 +228,12 @@
       .maybeSingle();
 
     if (error || !data) {
-      document.getElementById("login-message").innerText =
-        "아이디 또는 비밀번호가 맞지 않습니다.";
+      document.getElementById("login-message").innerText = "아이디 또는 비밀번호가 맞지 않습니다.";
       return;
     }
 
     if (data.approval_status !== "approved") {
-      document.getElementById("login-message").innerText =
-        "관리자 승인 대기중입니다.";
+      document.getElementById("login-message").innerText = "관리자 승인 대기중입니다.";
       return;
     }
 
@@ -265,8 +326,19 @@
 
   document.getElementById("signup-open-btn").addEventListener("click", showSignup);
   document.getElementById("login-open-btn").addEventListener("click", showLogin);
-  document.getElementById("signup-age").addEventListener("change", updateClassOptions);
+  document.getElementById("find-id-btn").addEventListener("click", showFindId);
+  document.getElementById("find-id-back-btn").addEventListener("click", showLogin);
+
+  document.getElementById("signup-age").addEventListener("change", () => {
+    updateClassOptions("signup-age", "signup-class");
+  });
+
+  document.getElementById("find-age").addEventListener("change", () => {
+    updateClassOptions("find-age", "find-class");
+  });
+
   document.getElementById("signup-btn").addEventListener("click", signup);
+  document.getElementById("find-id-submit-btn").addEventListener("click", findId);
   document.getElementById("login-btn").addEventListener("click", login);
   document.getElementById("logout-btn").addEventListener("click", logout);
 
