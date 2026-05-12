@@ -24,6 +24,37 @@
     .pagination button.active { background:#e8f0fe; color:#1d4ed8; border-color:#bfdbfe; }
     .page-size-box { max-width:160px; margin-top:10px; }
     .print-option-box { margin-top:10px; max-width:320px; }
+    .book-manage-box {
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  padding:14px;
+  margin:10px 0 20px;
+}
+
+.book-manage-row {
+  display:grid;
+  grid-template-columns: 1fr 1fr 1.5fr auto;
+  gap:8px;
+  align-items:center;
+  margin-bottom:8px;
+}
+
+.book-manage-row input {
+  margin-bottom:0;
+}
+
+.session-box {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+}
+
+@media (max-width: 700px) {
+  .book-manage-row {
+    grid-template-columns: 1fr;
+  }
+}
 .session-timer {
   font-size:13px;
   color:#6b7280;
@@ -169,14 +200,15 @@
   <div class="top">
     <div>
       <strong id="user-info"></strong>
-<span id="auto-logout-countdown" class="session-timer">자동 로그아웃 30:00</span>
-<button id="extend-session-btn" class="btn-basic">시간연장</button>
 <button id="profile-btn" class="btn-basic">내 정보 변경</button>
       <button id="my-books-btn" class="btn-basic">내 대여현황</button>
       <button id="admin-panel-btn" class="hidden btn-approve">관리자/담당자 페이지</button>
     </div>
-    <button id="logout-btn" class="btn-danger">로그아웃</button>
-  </div>
+   <div class="session-box">
+  <span id="auto-logout-countdown" class="session-timer">자동 로그아웃 30:00</span>
+  <button id="extend-session-btn" class="btn-basic">시간연장</button>
+  <button id="logout-btn" class="btn-danger">로그아웃</button>
+</div>
 
   <input id="search" placeholder="도서명 / 관리번호 / 분류명 검색" />
 
@@ -328,19 +360,49 @@
       <tbody id="manager-request-list"></tbody>
     </table>
 
-    <h3>이번 달 대여기록 관리</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>반</th>
-          <th>관리번호</th>
-          <th>도서명</th>
-          <th>상태</th>
-          <th>삭제</th>
-        </tr>
-      </thead>
-      <tbody id="monthly-record-list"></tbody>
-    </table>
+   <h3>대여기록 관리</h3>
+
+<button id="load-record-month-btn" class="btn-basic">선택 월 대여기록 불러오기</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>반</th>
+      <th>관리번호</th>
+      <th>도서명</th>
+      <th>상태</th>
+      <th>삭제</th>
+    </tr>
+  </thead>
+  <tbody id="monthly-record-list"></tbody>
+</table>
+    <h3>도서 관리</h3>
+
+<div class="book-manage-box">
+  <div class="book-manage-row">
+    <input id="new-book-number" placeholder="관리번호" />
+    <input id="new-book-category" placeholder="분류명" />
+    <input id="new-book-title" placeholder="도서명" />
+    <button id="add-book-btn" class="btn-approve">도서 추가</button>
+  </div>
+
+  <input id="manage-book-search" placeholder="수정/삭제할 도서 검색: 관리번호 / 도서명 / 분류명" />
+  <button id="manage-book-search-btn" class="btn-basic">도서 검색</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>관리번호</th>
+        <th>분류명</th>
+        <th>도서명</th>
+        <th>상태</th>
+        <th>수정</th>
+        <th>삭제</th>
+      </tr>
+    </thead>
+    <tbody id="manage-book-list"></tbody>
+  </table>
+</div>
   </div>
 
   <button id="admin-back-btn" class="btn-basic">돌아가기</button>
@@ -1296,7 +1358,154 @@ async function deleteRentalRecord(recordId) {
     alert("기록 정보를 찾을 수 없습니다.");
     return;
   }
+async function addBook() {
+  const bookNumber = document.getElementById("new-book-number").value.trim();
+  const category = document.getElementById("new-book-category").value.trim();
+  const title = document.getElementById("new-book-title").value.trim();
 
+  if (!bookNumber || !category || !title) {
+    alert("관리번호, 분류명, 도서명을 모두 입력해주세요.");
+    return;
+  }
+
+  const { data: existingBook } = await supabaseClient
+    .from("books")
+    .select("id")
+    .eq("관리번호", bookNumber)
+    .maybeSingle();
+
+  if (existingBook) {
+    alert("이미 같은 관리번호의 도서가 있습니다.");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("books")
+    .insert([{
+      "관리번호": bookNumber,
+      "분류명": category,
+      "도서명": title,
+      status: "available",
+      current_class: null,
+      current_user_id: null
+    }]);
+
+  if (error) {
+    alert("도서 추가 실패: " + error.message);
+    return;
+  }
+
+  alert("도서가 추가되었습니다.");
+
+  document.getElementById("new-book-number").value = "";
+  document.getElementById("new-book-category").value = "";
+  document.getElementById("new-book-title").value = "";
+
+  loadBooks();
+}
+
+async function searchManageBooks() {
+  const keyword = document.getElementById("manage-book-search").value.trim();
+  const list = document.getElementById("manage-book-list");
+
+  if (!keyword) {
+    alert("검색어를 입력해주세요.");
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("books")
+    .select('id,"관리번호","분류명","도서명",status,current_class,current_user_id')
+    .or(`도서명.ilike.%${keyword}%,관리번호.ilike.%${keyword}%,분류명.ilike.%${keyword}%`)
+    .limit(50);
+
+  list.innerHTML = "";
+
+  if (error) {
+    list.innerHTML = `<tr><td colspan="6">도서 검색 실패: ${error.message}</td></tr>`;
+    return;
+  }
+
+  if (!data || !data.length) {
+    list.innerHTML = `<tr><td colspan="6">검색 결과가 없습니다.</td></tr>`;
+    return;
+  }
+
+  data.forEach(book => {
+    list.innerHTML += `
+      <tr>
+        <td>${book["관리번호"] || ""}</td>
+        <td>${book["분류명"] || ""}</td>
+        <td>${book["도서명"] || ""}</td>
+        <td>${getStatusName(book.status)}</td>
+        <td><button class="btn-basic" onclick="editBook('${book.id}', '${book["관리번호"] || ""}', '${book["분류명"] || ""}', '${book["도서명"] || ""}')">수정</button></td>
+        <td><button class="btn-danger" onclick="deleteBook('${book.id}', '${book.status || ""}')">삭제</button></td>
+      </tr>
+    `;
+  });
+}
+
+async function editBook(bookId, oldNumber, oldCategory, oldTitle) {
+  const newNumber = prompt("관리번호를 수정하세요.", oldNumber);
+  if (newNumber === null) return;
+
+  const newCategory = prompt("분류명을 수정하세요.", oldCategory);
+  if (newCategory === null) return;
+
+  const newTitle = prompt("도서명을 수정하세요.", oldTitle);
+  if (newTitle === null) return;
+
+  if (!newNumber.trim() || !newCategory.trim() || !newTitle.trim()) {
+    alert("관리번호, 분류명, 도서명은 비워둘 수 없습니다.");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("books")
+    .update({
+      "관리번호": newNumber.trim(),
+      "분류명": newCategory.trim(),
+      "도서명": newTitle.trim()
+    })
+    .eq("id", bookId);
+
+  if (error) {
+    alert("도서 수정 실패: " + error.message);
+    return;
+  }
+
+  alert("도서 정보가 수정되었습니다.");
+  searchManageBooks();
+  loadBooks();
+}
+
+async function deleteBook(bookId, status) {
+  if (currentUser.role !== "admin") {
+    alert("도서 삭제는 관리자만 가능합니다.");
+    return;
+  }
+
+  if (status === "reserved" || status === "borrowed" || status === "return_requested") {
+    alert("예약/대여/반납요청 중인 도서는 삭제할 수 없습니다. 먼저 대여기록을 초기화해주세요.");
+    return;
+  }
+
+  if (!confirm("이 도서를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.")) return;
+
+  const { error } = await supabaseClient
+    .from("books")
+    .delete()
+    .eq("id", bookId);
+
+  if (error) {
+    alert("도서 삭제 실패: " + error.message);
+    return;
+  }
+
+  alert("도서가 삭제되었습니다.");
+  searchManageBooks();
+  loadBooks();
+}
   const { error: bookError } = await supabaseClient
     .from("books")
     .update({
@@ -1548,7 +1757,9 @@ document.getElementById("next-page-btn").addEventListener("click", nextPage);
 
 document.getElementById("print-all-month-btn").addEventListener("click", () => printMonthlyRecords());
 document.getElementById("print-class-month-btn").addEventListener("click", printClassMonthlyRecords);
-
+document.getElementById("load-record-month-btn").addEventListener("click", loadMonthlyRecordList);
+document.getElementById("add-book-btn").addEventListener("click", addBook);
+document.getElementById("manage-book-search-btn").addEventListener("click", searchManageBooks);
 document.getElementById("page-size").addEventListener("change", (e) => {
   pageSize = Number(e.target.value);
   currentPage = 1;
