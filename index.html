@@ -6,93 +6,152 @@
   <title>탕정삼성어린이집 도서관리 시스템</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; background:#fafafa; }
-    h1 { margin-bottom: 20px; }
-    input { padding: 12px; width: 100%; margin-bottom: 15px; box-sizing: border-box; }
-    table { width: 100%; border-collapse: collapse; background:white; }
-    th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
-    th { background: #f1f1f1; }
-    .top { display:flex; gap:10px; margin-bottom:15px; }
-    button { padding: 10px 14px; cursor:pointer; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #fafafa;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .top {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    button {
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    input {
+      padding: 12px;
+      width: 100%;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      table-layout: fixed;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      font-size: 14px;
+      word-break: keep-all;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f1f1f1;
+    }
+
+    .status {
+      text-align: center;
+    }
+
+    .btn-cell {
+      text-align: center;
+    }
   </style>
 </head>
 <body>
 
-<h1>탕정삼성어린이집 도서관리 시스템</h1>
+  <h1>탕정삼성어린이집 도서관리 시스템</h1>
 
-<div class="top">
-  <button>로그인</button>
-  <button>회원가입</button>
-</div>
+  <div class="top">
+    <button>로그인</button>
+    <button>회원가입</button>
+  </div>
 
-<input type="text" id="search" placeholder="도서명 또는 관리번호 검색">
+  <input type="text" id="search" placeholder="도서명 또는 관리번호 검색" />
 
-<table>
-  <thead>
-    <tr>
-      <th>관리번호</th>
-      <th>도서명</th>
-      <th>분류명</th>
-      <th>상태</th>
-      <th>사용 반</th>
-      <th>대여</th>
-    </tr>
-  </thead>
-  <tbody id="book-list"></tbody>
-</table>
-
-<script>
-const supabaseUrl = "https://vohcugxfwxdvkbcpjcgl.supabase.co";
-const supabaseKey = "sb_publishable_Q0cXaglzBaz9Py2oct_NTQ_vMHsUeSQ";
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-
-async function loadBooks(searchTerm = "") {
-  let query = supabaseClient
-    .from("books")
-    .select('"관리번호","도서명","분류명",status,current_class')
-    .limit(500);
-
-  if (searchTerm) {
-    query = query.or(`도서명.ilike.%${searchTerm}%,관리번호.ilike.%${searchTerm}%`);
-  }
-
-  const { data, error } = await query;
-
-  const bookList = document.getElementById("book-list");
-  bookList.innerHTML = "";
-
-  if (error) {
-    bookList.innerHTML = `<tr><td colspan="6">데이터를 불러오지 못했습니다: ${error.message}</td></tr>`;
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    bookList.innerHTML = `<tr><td colspan="6">검색 결과가 없습니다.</td></tr>`;
-    return;
-  }
-
-  data.forEach(book => {
-    const statusText = book.status === "available" || !book.status ? "대여가능" : book.status;
-    const row = `
+  <table>
+    <thead>
       <tr>
-        <td>${book["관리번호"] || ""}</td>
-        <td>${book["도서명"] || ""}</td>
-        <td>${book["분류명"] || ""}</td>
-        <td>${statusText}</td>
-        <td>${book.current_class || "-"}</td>
-        <td><button>대여예약</button></td>
+        <th style="width:18%">관리번호</th>
+        <th style="width:30%">분류명</th>
+        <th style="width:32%">도서명</th>
+        <th style="width:8%">상태</th>
+        <th style="width:5%">사용반</th>
+        <th style="width:7%">대여</th>
       </tr>
-    `;
-    bookList.innerHTML += row;
-  });
-}
+    </thead>
+    <tbody id="book-list"></tbody>
+  </table>
 
-document.getElementById("search").addEventListener("input", (e) => {
-  loadBooks(e.target.value);
-});
+  <script>
+    const supabaseUrl = "https://vohcugxfwxdvkbcpjcgl.supabase.co";
+    const supabaseKey = "sb_publishable_Q0cXaglzBaz9Py2oct_NTQ_vMHsUeSQ";
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-loadBooks();
-</script>
+    async function loadBooks(searchTerm = "") {
+      let query = supabaseClient
+        .from("books")
+        .select('"관리번호","분류명","도서명",status,current_class')
+        .limit(500);
+
+      if (searchTerm) {
+        query = query.or(`도서명.ilike.%${searchTerm}%,관리번호.ilike.%${searchTerm}%`);
+      }
+
+      const { data, error } = await query;
+
+      const bookList = document.getElementById("book-list");
+      bookList.innerHTML = "";
+
+      if (error) {
+        bookList.innerHTML = `
+          <tr>
+            <td colspan="6">데이터를 불러오지 못했습니다: ${error.message}</td>
+          </tr>
+        `;
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        bookList.innerHTML = `
+          <tr>
+            <td colspan="6">검색 결과가 없습니다.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      data.forEach(book => {
+        const statusText =
+          book.status === "available" || !book.status
+            ? "대여가능"
+            : book.status;
+
+        const row = `
+          <tr>
+            <td>${book["관리번호"] || ""}</td>
+            <td>${book["분류명"] || ""}</td>
+            <td>${book["도서명"] || ""}</td>
+            <td class="status">${statusText}</td>
+            <td class="status">${book.current_class || "-"}</td>
+            <td class="btn-cell"><button>대여예약</button></td>
+          </tr>
+        `;
+
+        bookList.innerHTML += row;
+      });
+    }
+
+    document.getElementById("search").addEventListener("input", (e) => {
+      loadBooks(e.target.value);
+    });
+
+    loadBooks();
+  </script>
 
 </body>
 </html>
