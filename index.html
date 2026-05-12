@@ -609,7 +609,9 @@ function setMessage(id, text, color = "#2563eb") {
   el.style.color = color;
 }
 
-function showScreen(screenId) {
+let currentScreenId = "login-screen";
+
+function showScreen(screenId, addHistory = true) {
   [
     "login-screen",
     "signup-screen",
@@ -630,6 +632,12 @@ function showScreen(screenId) {
   const contact = document.getElementById("login-contact");
   if (contact) {
     contact.style.display = screenId === "login-screen" ? "block" : "none";
+  }
+
+  currentScreenId = screenId;
+
+  if (addHistory) {
+    history.pushState({ screenId }, "", location.href);
   }
 }
 
@@ -798,7 +806,8 @@ function afterLoginSuccess() {
   document.getElementById("manager-page-btn").classList.add("hidden");
   document.getElementById("admin-page-btn").classList.add("hidden");
   document.getElementById("book-manage-page-btn").classList.add("hidden");
-
+history.replaceState({ screenId: "app-screen" }, "", location.href);
+  
   if (currentUser.role === "manager") {
     document.getElementById("manager-page-btn").classList.remove("hidden");
     document.getElementById("book-manage-page-btn").classList.remove("hidden");
@@ -829,6 +838,18 @@ function logout() {
   showScreen("login-screen");
 }
 
+window.addEventListener("popstate", (event) => {
+  if (event.state && event.state.screenId) {
+    showScreen(event.state.screenId, false);
+  } else if (currentUser) {
+    showScreen("app-screen", false);
+  } else {
+    showScreen("login-screen", false);
+  }
+});
+
+history.replaceState({ screenId: "login-screen" }, "", location.href);
+    
 function restoreLogin() {
   const savedUser = localStorage.getItem("libraryCurrentUser");
   if (!savedUser) return;
