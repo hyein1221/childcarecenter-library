@@ -1,10 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-  <title>Childcare Center Library</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>탕정삼성어린이집 도서관리 시스템</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input { padding: 10px; width: 100%; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f4f4f4; }
+  </style>
 </head>
 <body>
-  <h1>어린이집 도서관리 시스템</h1>
-  <p>개발 시작중...</p>
+
+<h1>탕정삼성어린이집 도서관리 시스템</h1>
+
+<input type="text" id="search" placeholder="도서명 검색">
+
+<table>
+  <thead>
+    <tr>
+      <th>도서명</th>
+      <th>분류명</th>
+      <th>상태</th>
+    </tr>
+  </thead>
+  <tbody id="book-list"></tbody>
+</table>
+
+<script>
+const supabaseUrl = "https://vohcugxfwxdvkbcpjcgl.supabase.co";
+const supabaseKey = "sb_publishable_Q0cXaglzBaz9Py2oct_NTQ_vMHsUeSQ";
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+async function loadBooks(searchTerm = "") {
+  let query = supabaseClient
+    .from("books")
+    .select("title, category, status")
+    .limit(100);
+
+  if (searchTerm) {
+    query = query.ilike("title", `%${searchTerm}%`);
+  }
+
+  const { data, error } = await query;
+
+  const bookList = document.getElementById("book-list");
+  bookList.innerHTML = "";
+
+  if (data) {
+    data.forEach(book => {
+      const row = `
+        <tr>
+          <td>${book.title || ""}</td>
+          <td>${book.category || ""}</td>
+          <td>${book.status || ""}</td>
+        </tr>
+      `;
+      bookList.innerHTML += row;
+    });
+  }
+}
+
+document.getElementById("search").addEventListener("input", (e) => {
+  loadBooks(e.target.value);
+});
+
+loadBooks();
+</script>
+
 </body>
 </html>
