@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>탕정삼성어린이집 도서관리 시스템</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     body { font-family: sans-serif; padding:20px; background:#fafafa; }
     h1 { margin-bottom:20px; }
@@ -22,6 +23,8 @@
     .pagination { margin-top:15px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
     .pagination button.active { background:#e8f0fe; color:#1d4ed8; border-color:#bfdbfe; }
     .page-size-box { max-width:160px; margin-top:10px; }
+    .print-option-box { margin-top:10px; max-width:320px; }
+
     .btn-basic { background:white; color:#111; }
     .btn-reserve { background:#e8f0fe; color:#1d4ed8; border-color:#bfdbfe; }
     .btn-cancel { background:#f3f4f6; color:#4b5563; border-color:#d1d5db; }
@@ -59,6 +62,7 @@
   <input id="signup-name" placeholder="이름" />
   <input id="signup-username" placeholder="아이디" />
   <input id="signup-password" type="password" placeholder="비밀번호" />
+
   <select id="signup-age">
     <option value="">연령 선택</option>
     <option value="만1세">만1세</option>
@@ -67,7 +71,11 @@
     <option value="만4세">만4세</option>
     <option value="만5세">만5세</option>
   </select>
-  <select id="signup-class"><option value="">반 선택</option></select>
+
+  <select id="signup-class">
+    <option value="">반 선택</option>
+  </select>
+
   <button id="signup-btn" class="btn-reserve">가입 신청</button>
   <button id="login-open-btn" class="btn-basic">로그인으로 돌아가기</button>
   <p id="signup-message" class="message"></p>
@@ -76,6 +84,7 @@
 <div id="find-id-screen" class="box hidden">
   <h2>아이디 찾기</h2>
   <input id="find-name" placeholder="이름" />
+
   <select id="find-age">
     <option value="">연령 선택</option>
     <option value="만1세">만1세</option>
@@ -84,7 +93,11 @@
     <option value="만4세">만4세</option>
     <option value="만5세">만5세</option>
   </select>
-  <select id="find-class"><option value="">반 선택</option></select>
+
+  <select id="find-class">
+    <option value="">반 선택</option>
+  </select>
+
   <button id="find-id-submit-btn" class="btn-reserve">아이디 찾기</button>
   <button id="find-id-back-btn" class="btn-basic">로그인으로 돌아가기</button>
   <p id="find-id-message" class="message"></p>
@@ -95,7 +108,9 @@
   <p><strong>이름:</strong> <span id="profile-name"></span></p>
   <p><strong>현재 반:</strong> <span id="profile-current-class"></span></p>
   <p><strong>현재 권한:</strong> <span id="profile-role"></span></p>
+
   <input id="new-password" type="password" placeholder="새 비밀번호" />
+
   <select id="change-age">
     <option value="">변경 연령 선택</option>
     <option value="만1세">만1세</option>
@@ -104,7 +119,11 @@
     <option value="만4세">만4세</option>
     <option value="만5세">만5세</option>
   </select>
-  <select id="change-class"><option value="">변경 반 선택</option></select>
+
+  <select id="change-class">
+    <option value="">변경 반 선택</option>
+  </select>
+
   <button id="change-password-btn" class="btn-reserve">비밀번호 변경</button>
   <button id="request-class-change-btn" class="btn-return">반 변경 요청</button>
   <button id="request-manager-btn" class="btn-approve">도서담당자 권한 요청</button>
@@ -176,7 +195,25 @@
 <div id="admin-screen" class="box hidden">
   <h2>관리자/담당자 페이지</h2>
 
-  <button id="print-month-btn" class="btn-basic">이번 달 대여기록 출력</button>
+  <h3>출력</h3>
+  <button id="print-all-month-btn" class="btn-basic">이번 달 전체 대여기록 출력</button>
+
+  <div class="print-option-box">
+    <select id="print-age">
+      <option value="">연령 선택</option>
+      <option value="만1세">만1세</option>
+      <option value="만2세">만2세</option>
+      <option value="만3세">만3세</option>
+      <option value="만4세">만4세</option>
+      <option value="만5세">만5세</option>
+    </select>
+
+    <select id="print-class">
+      <option value="">반 선택</option>
+    </select>
+
+    <button id="print-class-month-btn" class="btn-basic">선택 반 대여기록 출력</button>
+  </div>
 
   <h3>대여예약 승인</h3>
   <table>
@@ -198,7 +235,7 @@
         <th>관리번호</th>
         <th>도서명</th>
         <th>사용반</th>
-        <th>승인</th>
+        <th>처리</th>
       </tr>
     </thead>
     <tbody id="return-approve-list"></tbody>
@@ -292,6 +329,7 @@ function getMonthRange() {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
+
   return {
     year,
     month,
@@ -308,9 +346,15 @@ function setMessage(id, text, color = "#2563eb") {
 
 function showScreen(screenId) {
   [
-    "login-screen", "signup-screen", "find-id-screen", "profile-screen",
-    "app-screen", "admin-screen", "my-books-screen"
+    "login-screen",
+    "signup-screen",
+    "find-id-screen",
+    "profile-screen",
+    "app-screen",
+    "admin-screen",
+    "my-books-screen"
   ].forEach(id => document.getElementById(id).classList.add("hidden"));
+
   document.getElementById(screenId).classList.remove("hidden");
 }
 
@@ -318,7 +362,9 @@ function updateClassOptions(ageId, classId) {
   const age = document.getElementById(ageId).value;
   const classSelect = document.getElementById(classId);
   classSelect.innerHTML = `<option value="">반 선택</option>`;
+
   if (!classMap[age]) return;
+
   classMap[age].forEach(cls => {
     classSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
   });
@@ -908,6 +954,7 @@ async function approveRental(bookId) {
 
 async function rejectRental(bookId) {
   const reason = prompt("반려 사유를 입력해주세요.");
+
   if (!reason || !reason.trim()) {
     alert("반려 사유를 입력해야 합니다.");
     return;
@@ -953,7 +1000,10 @@ async function loadReturnApproveList() {
         <td>${book["관리번호"] || ""}</td>
         <td>${book["도서명"] || ""}</td>
         <td>${book.current_class || "-"}</td>
-        <td><button class="btn-approve" onclick="approveReturn('${book.id}')">반납승인</button></td>
+        <td>
+          <button class="btn-approve" onclick="approveReturn('${book.id}')">반납승인</button>
+          <button class="btn-danger" onclick="rejectReturn('${book.id}')">반납반려</button>
+        </td>
       </tr>
     `;
   });
@@ -983,6 +1033,47 @@ async function approveReturn(bookId) {
   loadBooks();
 }
 
+async function rejectReturn(bookId) {
+  const reason = prompt("반납 반려 사유를 입력해주세요.");
+
+  if (!reason || !reason.trim()) {
+    alert("반려 사유를 입력해야 합니다.");
+    return;
+  }
+
+  const { error: bookError } = await supabaseClient
+    .from("books")
+    .update({
+      status: "borrowed"
+    })
+    .eq("id", bookId);
+
+  if (bookError) {
+    alert("도서 상태 복구 실패: " + bookError.message);
+    return;
+  }
+
+  const { error: recordError } = await supabaseClient
+    .from("rental_records")
+    .update({
+      status: "borrowed",
+      return_requested_at: null,
+      returned_at: null,
+      return_approved_by: null
+    })
+    .eq("book_id", bookId)
+    .eq("status", "return_requested");
+
+  if (recordError) {
+    alert("반납요청 기록 복구 실패: " + recordError.message);
+    return;
+  }
+
+  alert("반납요청이 반려되었습니다. 사유: " + reason);
+  loadReturnApproveList();
+  loadBooks();
+}
+
 async function getUserNameById(userId) {
   if (!userId) return "-";
 
@@ -995,15 +1086,21 @@ async function getUserNameById(userId) {
   return data?.name || "-";
 }
 
-async function getMonthlyRecords() {
+async function getMonthlyRecords(className = null) {
   const { startDate, endDate } = getMonthRange();
 
-  const { data: records, error } = await supabaseClient
+  let query = supabaseClient
     .from("rental_records")
     .select("*")
     .gte("approved_at", startDate)
     .lt("approved_at", endDate)
     .in("status", ["borrowed", "return_requested", "returned"]);
+
+  if (className) {
+    query = query.eq("class_name", className);
+  }
+
+  const { data: records, error } = await query;
 
   if (error) {
     alert("기록을 불러오지 못했습니다: " + error.message);
@@ -1100,16 +1197,19 @@ async function deleteRentalRecord(recordId) {
   loadBooks();
 }
 
-async function printMonthlyRecords() {
+async function printMonthlyRecords(className = null) {
   const { year, month } = getMonthRange();
-  const records = await getMonthlyRecords();
+  const records = await getMonthlyRecords(className);
   const printArea = document.getElementById("print-area");
-  const monthText = `${year}년 ${month + 1}월`;
+
+  const title = className
+    ? `${year}년 ${month + 1}월 ${className} 대여기록`
+    : `${year}년 ${month + 1}월 전체 대여기록`;
 
   let rows = "";
 
   if (!records.length) {
-    rows = `<tr><td colspan="7">이번 달 대여기록이 없습니다.</td></tr>`;
+    rows = `<tr><td colspan="7">대여기록이 없습니다.</td></tr>`;
   } else {
     records.forEach(record => {
       rows += `
@@ -1128,7 +1228,7 @@ async function printMonthlyRecords() {
 
   printArea.innerHTML = `
     <h2>탕정삼성어린이집 도서 대여·반납 기록</h2>
-    <h3>${monthText}</h3>
+    <h3>${title}</h3>
     <table>
       <thead>
         <tr>
@@ -1155,6 +1255,17 @@ async function printMonthlyRecords() {
       printArea.style.display = "none";
     }, 1500);
   }, 500);
+}
+
+function printClassMonthlyRecords() {
+  const className = document.getElementById("print-class").value;
+
+  if (!className) {
+    alert("출력할 반을 선택해주세요.");
+    return;
+  }
+
+  printMonthlyRecords(className);
 }
 
 async function loadPendingUsers() {
@@ -1287,6 +1398,7 @@ document.getElementById("find-id-back-btn").addEventListener("click", () => show
 document.getElementById("signup-age").addEventListener("change", () => updateClassOptions("signup-age", "signup-class"));
 document.getElementById("find-age").addEventListener("change", () => updateClassOptions("find-age", "find-class"));
 document.getElementById("change-age").addEventListener("change", () => updateClassOptions("change-age", "change-class"));
+document.getElementById("print-age").addEventListener("change", () => updateClassOptions("print-age", "print-class"));
 
 document.getElementById("signup-btn").addEventListener("click", signup);
 document.getElementById("find-id-submit-btn").addEventListener("click", findId);
@@ -1303,7 +1415,9 @@ document.getElementById("request-class-change-btn").addEventListener("click", re
 document.getElementById("request-manager-btn").addEventListener("click", requestManagerRole);
 document.getElementById("prev-page-btn").addEventListener("click", prevPage);
 document.getElementById("next-page-btn").addEventListener("click", nextPage);
-document.getElementById("print-month-btn").addEventListener("click", printMonthlyRecords);
+
+document.getElementById("print-all-month-btn").addEventListener("click", () => printMonthlyRecords());
+document.getElementById("print-class-month-btn").addEventListener("click", printClassMonthlyRecords);
 
 document.getElementById("page-size").addEventListener("change", (e) => {
   pageSize = Number(e.target.value);
