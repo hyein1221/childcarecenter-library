@@ -803,19 +803,23 @@ function afterLoginSuccess() {
   document.getElementById("user-info").innerText =
     `${currentUser.name} / ${currentUser.class_name} / ${getRoleName(currentUser.role)}`;
 
+  document.getElementById("manager-page-btn").classList.add("hidden");
   document.getElementById("admin-page-btn").classList.add("hidden");
   document.getElementById("book-manage-page-btn").classList.add("hidden");
 
   if (currentUser.role === "manager") {
+    document.getElementById("manager-page-btn").classList.remove("hidden");
     document.getElementById("book-manage-page-btn").classList.remove("hidden");
   }
 
   if (currentUser.role === "admin") {
+    document.getElementById("manager-page-btn").classList.remove("hidden");
     document.getElementById("admin-page-btn").classList.remove("hidden");
     document.getElementById("book-manage-page-btn").classList.remove("hidden");
   }
 
   startAutoLogout();
+
   showScreen("app-screen", false);
   history.replaceState({ screenId: "app-screen" }, "", location.href);
 
