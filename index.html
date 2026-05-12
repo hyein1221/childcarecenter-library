@@ -800,7 +800,6 @@ async function login() {
 }
 
 function afterLoginSuccess() {
-  alert("현재 권한: " + currentUser.role);
   document.getElementById("user-info").innerText =
     `${currentUser.name} / ${currentUser.class_name} / ${getRoleName(currentUser.role)}`;
 
