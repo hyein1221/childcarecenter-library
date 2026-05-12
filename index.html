@@ -368,31 +368,32 @@
     </table>
 
     <h3>도서 관리</h3>
-    <div class="book-manage-box">
-      <div class="book-manage-row">
-        <input id="new-book-number" placeholder="관리번호" />
-        <input id="new-book-category" placeholder="분류명" />
-        <input id="new-book-title" placeholder="도서명" />
-        <button id="add-book-btn" class="btn-approve">도서 추가</button>
-      </div>
 
-      <input id="manage-book-search" placeholder="수정/삭제할 도서 검색: 관리번호 / 도서명 / 분류명" />
-      <button id="manage-book-search-btn" class="btn-basic">도서 검색</button>
+<div class="book-manage-box">
+  <input id="book-excel-file" type="file" accept=".xlsx,.xls" />
+  <button id="upload-book-excel-btn" class="btn-approve">엑셀로 도서 등록</button>
 
-      <table>
-        <thead>
-          <tr>
-            <th>관리번호</th>
-            <th>분류명</th>
-            <th>도서명</th>
-            <th>상태</th>
-            <th>수정</th>
-            <th>삭제</th>
-          </tr>
-        </thead>
-        <tbody id="manage-book-list"></tbody>
-      </table>
-    </div>
+  <p class="notice">
+    엑셀에 관리번호, 분류명, 도서명 열이 포함되어 있어야 합니다.
+  </p>
+
+  <input id="manage-book-search" placeholder="수정/삭제할 도서 검색: 관리번호 / 도서명 / 분류명" />
+  <button id="manage-book-search-btn" class="btn-basic">도서 검색</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>관리번호</th>
+        <th>분류명</th>
+        <th>도서명</th>
+        <th>상태</th>
+        <th>수정</th>
+        <th>삭제</th>
+      </tr>
+    </thead>
+    <tbody id="manage-book-list"></tbody>
+  </table>
+</div>
   </div>
 
   <button id="admin-back-btn" class="btn-basic">돌아가기</button>
@@ -1759,7 +1760,7 @@ document.getElementById("load-record-month-btn").addEventListener("click", loadM
 
 document.getElementById("add-book-btn").addEventListener("click", addBook);
 document.getElementById("manage-book-search-btn").addEventListener("click", searchManageBooks);
-
+document.getElementById("upload-book-excel-btn").addEventListener("click", uploadBookExcel);
 document.getElementById("page-size").addEventListener("change", (e) => {
   pageSize = Number(e.target.value);
   currentPage = 1;
