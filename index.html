@@ -1008,12 +1008,9 @@ async function printMonthlyRecords() {
   const startDate = new Date(year, month, 1).toISOString();
   const endDate = new Date(year, month + 1, 1).toISOString();
 
-  const { data, error } = await supabaseClient
+  const { data: records, error } = await supabaseClient
     .from("rental_records")
-    .select(`
-      *,
-      books("관리번호","도서명")
-    `)
+    .select("*")
     .gte("approved_at", startDate)
     .lt("approved_at", endDate)
     .in("status", ["borrowed", "return_requested", "returned"]);
@@ -1028,15 +1025,21 @@ async function printMonthlyRecords() {
 
   let rows = "";
 
-  if (!data || !data.length) {
+  if (!records || !records.length) {
     rows = `<tr><td colspan="8">이번 달 대여기록이 없습니다.</td></tr>`;
   } else {
-    data.forEach(record => {
+    for (const record of records) {
+      const { data: book } = await supabaseClient
+        .from("books")
+        .select('"관리번호","도서명"')
+        .eq("id", record.book_id)
+        .maybeSingle();
+
       rows += `
         <tr>
           <td>${record.class_name || ""}</td>
-          <td>${record.books?.["관리번호"] || ""}</td>
-          <td>${record.books?.["도서명"] || ""}</td>
+          <td>${book?.["관리번호"] || ""}</td>
+          <td>${book?.["도서명"] || ""}</td>
           <td>${formatDate(record.reserved_at)}</td>
           <td>${formatDate(record.approved_at)}</td>
           <td>${formatDate(record.return_requested_at)}</td>
@@ -1044,7 +1047,7 @@ async function printMonthlyRecords() {
           <td>${getStatusName(record.status)}</td>
         </tr>
       `;
-    });
+    }
   }
 
   printArea.innerHTML = `
