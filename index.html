@@ -8,9 +8,9 @@
   <style>
     body { font-family: sans-serif; padding:20px; background:#fafafa; }
     h1 { margin-bottom:20px; }
-    .box { background:white; padding:20px; border:1px solid #ddd; max-width:900px; margin-bottom:20px; }
+    .box { background:white; padding:20px; border:1px solid #ddd; max-width:1000px; margin-bottom:20px; }
     input, select { width:100%; padding:12px; margin-bottom:10px; box-sizing:border-box; font-size:14px; }
-    button { padding:10px 14px; margin:2px; cursor:pointer; border:1px solid #ccc; background:white; }
+    button { padding:9px 12px; margin:2px; cursor:pointer; border:1px solid #ccc; border-radius:4px; }
     .hidden { display:none; }
     .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; gap:10px; }
     table { width:100%; border-collapse:collapse; background:white; table-layout:fixed; }
@@ -22,6 +22,14 @@
     .pagination { margin-top:15px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
     .pagination button.active { background:#2563eb; color:white; }
     .page-size-box { max-width:160px; margin-top:10px; }
+
+    .btn-basic { background:white; color:#111; }
+    .btn-reserve { background:#2563eb; color:white; border-color:#2563eb; }
+    .btn-cancel { background:#6b7280; color:white; border-color:#6b7280; }
+    .btn-return { background:#f97316; color:white; border-color:#f97316; }
+    .btn-approve { background:#16a34a; color:white; border-color:#16a34a; }
+    .btn-danger { background:#dc2626; color:white; border-color:#dc2626; }
+    .btn-wait { background:#e5e7eb; color:#555; border-color:#d1d5db; cursor:default; }
   </style>
 </head>
 
@@ -33,9 +41,9 @@
   <h2>로그인</h2>
   <input id="login-username" placeholder="아이디" />
   <input id="login-password" type="password" placeholder="비밀번호" />
-  <button id="login-btn">로그인</button>
-  <button id="signup-open-btn">회원가입</button>
-  <button id="find-id-btn">아이디 찾기</button>
+  <button id="login-btn" class="btn-reserve">로그인</button>
+  <button id="signup-open-btn" class="btn-basic">회원가입</button>
+  <button id="find-id-btn" class="btn-basic">아이디 찾기</button>
   <p class="notice">비밀번호 초기화는 관리자에게 문의해주세요.</p>
   <p id="login-message" class="message"></p>
 </div>
@@ -59,8 +67,8 @@
     <option value="">반 선택</option>
   </select>
 
-  <button id="signup-btn">가입 신청</button>
-  <button id="login-open-btn">로그인으로 돌아가기</button>
+  <button id="signup-btn" class="btn-reserve">가입 신청</button>
+  <button id="login-open-btn" class="btn-basic">로그인으로 돌아가기</button>
   <p id="signup-message" class="message"></p>
 </div>
 
@@ -81,8 +89,8 @@
     <option value="">반 선택</option>
   </select>
 
-  <button id="find-id-submit-btn">아이디 찾기</button>
-  <button id="find-id-back-btn">로그인으로 돌아가기</button>
+  <button id="find-id-submit-btn" class="btn-reserve">아이디 찾기</button>
+  <button id="find-id-back-btn" class="btn-basic">로그인으로 돌아가기</button>
   <p id="find-id-message" class="message"></p>
 </div>
 
@@ -106,9 +114,9 @@
     <option value="">변경 반 선택</option>
   </select>
 
-  <button id="change-password-btn">비밀번호 변경</button>
-  <button id="request-class-change-btn">반 변경 요청</button>
-  <button id="back-btn">돌아가기</button>
+  <button id="change-password-btn" class="btn-reserve">비밀번호 변경</button>
+  <button id="request-class-change-btn" class="btn-return">반 변경 요청</button>
+  <button id="back-btn" class="btn-basic">돌아가기</button>
   <p id="profile-message" class="message"></p>
 </div>
 
@@ -116,10 +124,10 @@
   <div class="top">
     <div>
       <strong id="user-info"></strong>
-      <button id="profile-btn">내 정보 변경</button>
-      <button id="admin-panel-btn" class="hidden">관리자 페이지</button>
+      <button id="profile-btn" class="btn-basic">내 정보 변경</button>
+      <button id="admin-panel-btn" class="hidden btn-approve">관리자/담당자 페이지</button>
     </div>
-    <button id="logout-btn">로그아웃</button>
+    <button id="logout-btn" class="btn-danger">로그아웃</button>
   </div>
 
   <input id="search" placeholder="도서명 / 관리번호 / 분류명 검색" />
@@ -135,12 +143,13 @@
   <table>
     <thead>
       <tr>
-        <th style="width:18%">관리번호</th>
-        <th style="width:30%">분류명</th>
-        <th style="width:32%">도서명</th>
+        <th style="width:17%">관리번호</th>
+        <th style="width:25%">분류명</th>
+        <th style="width:30%">도서명</th>
         <th style="width:8%">상태</th>
-        <th style="width:5%">사용반</th>
+        <th style="width:6%">사용반</th>
         <th style="width:7%">대여</th>
+        <th style="width:7%">반납</th>
       </tr>
     </thead>
     <tbody id="book-list"></tbody>
@@ -148,55 +157,83 @@
 
   <div class="pagination">
     <span id="pagination-info"></span>
-    <button id="prev-page-btn">이전</button>
+    <button id="prev-page-btn" class="btn-basic">이전</button>
     <span id="page-buttons"></span>
-    <button id="next-page-btn">다음</button>
+    <button id="next-page-btn" class="btn-basic">다음</button>
   </div>
 </div>
 
 <div id="admin-screen" class="box hidden">
-  <h2>관리자 페이지</h2>
+  <h2>관리자/담당자 페이지</h2>
 
-  <h3>회원가입 승인 요청</h3>
+  <h3>대여예약 승인</h3>
   <table>
     <thead>
       <tr>
-        <th>이름</th>
-        <th>아이디</th>
-        <th>반</th>
-        <th>승인</th>
-      </tr>
-    </thead>
-    <tbody id="pending-users-list"></tbody>
-  </table>
-
-  <h3>반 변경 요청</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>이름</th>
-        <th>현재반</th>
+        <th>관리번호</th>
+        <th>도서명</th>
         <th>요청반</th>
         <th>승인</th>
       </tr>
     </thead>
-    <tbody id="class-change-list"></tbody>
+    <tbody id="rental-approve-list"></tbody>
   </table>
 
-  <h3>담당자 권한 요청</h3>
+  <h3>반납요청 승인</h3>
   <table>
     <thead>
       <tr>
-        <th>이름</th>
-        <th>현재권한</th>
-        <th>요청권한</th>
+        <th>관리번호</th>
+        <th>도서명</th>
+        <th>사용반</th>
         <th>승인</th>
       </tr>
     </thead>
-    <tbody id="manager-request-list"></tbody>
+    <tbody id="return-approve-list"></tbody>
   </table>
 
-  <button id="admin-back-btn">돌아가기</button>
+  <div id="admin-only-section">
+    <h3>회원가입 승인 요청</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>이름</th>
+          <th>아이디</th>
+          <th>반</th>
+          <th>승인</th>
+        </tr>
+      </thead>
+      <tbody id="pending-users-list"></tbody>
+    </table>
+
+    <h3>반 변경 요청</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>이름</th>
+          <th>현재반</th>
+          <th>요청반</th>
+          <th>승인</th>
+        </tr>
+      </thead>
+      <tbody id="class-change-list"></tbody>
+    </table>
+
+    <h3>담당자 권한 요청</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>이름</th>
+          <th>현재권한</th>
+          <th>요청권한</th>
+          <th>승인</th>
+        </tr>
+      </thead>
+      <tbody id="manager-request-list"></tbody>
+    </table>
+  </div>
+
+  <button id="admin-back-btn" class="btn-basic">돌아가기</button>
 </div>
 
 <script>
@@ -235,9 +272,7 @@ function updateClassOptions(ageId, classId) {
   const age = document.getElementById(ageId).value;
   const classSelect = document.getElementById(classId);
   classSelect.innerHTML = `<option value="">반 선택</option>`;
-
   if (!classMap[age]) return;
-
   classMap[age].forEach(cls => {
     classSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
   });
@@ -326,7 +361,7 @@ function afterLoginSuccess() {
   document.getElementById("user-info").innerText =
     `${currentUser.name} / ${currentUser.class_name} / ${currentUser.role}`;
 
-  if (currentUser.role === "admin") {
+  if (currentUser.role === "admin" || currentUser.role === "manager") {
     document.getElementById("admin-panel-btn").classList.remove("hidden");
   } else {
     document.getElementById("admin-panel-btn").classList.add("hidden");
@@ -438,14 +473,14 @@ async function requestClassChange() {
 
 async function loadBooks() {
   const bookList = document.getElementById("book-list");
-  bookList.innerHTML = `<tr><td colspan="6">도서 목록을 불러오는 중입니다...</td></tr>`;
+  bookList.innerHTML = `<tr><td colspan="7">도서 목록을 불러오는 중입니다...</td></tr>`;
 
   const start = (currentPage - 1) * pageSize;
   const end = start + pageSize - 1;
 
   let query = supabaseClient
     .from("books")
-    .select('"관리번호","분류명","도서명",status,current_class', { count: "exact" })
+    .select('id,"관리번호","분류명","도서명",status,current_class,current_user_id', { count: "exact" })
     .order("관리번호", { ascending: true })
     .range(start, end);
 
@@ -457,7 +492,7 @@ async function loadBooks() {
 
   if (error) {
     bookList.innerHTML =
-      `<tr><td colspan="6">도서 목록을 불러오지 못했습니다: ${error.message}</td></tr>`;
+      `<tr><td colspan="7">도서 목록을 불러오지 못했습니다: ${error.message}</td></tr>`;
     return;
   }
 
@@ -471,7 +506,7 @@ function renderBooks(books) {
   bookList.innerHTML = "";
 
   if (!books.length) {
-    bookList.innerHTML = `<tr><td colspan="6">검색 결과가 없습니다.</td></tr>`;
+    bookList.innerHTML = `<tr><td colspan="7">검색 결과가 없습니다.</td></tr>`;
     return;
   }
 
@@ -483,7 +518,26 @@ function renderBooks(books) {
       book.status === "return_requested" ? "반납요청중" :
       book.status;
 
-    const canReserve = statusText === "대여가능";
+    let rentalButton = "-";
+    let returnButton = "-";
+
+    const isMine = book.current_user_id === currentUser.id;
+
+    if (statusText === "대여가능") {
+      rentalButton = `<button class="btn-reserve" onclick="reserveBook('${book.id}')">대여예약</button>`;
+    }
+
+    if (statusText === "대여예약중" && isMine) {
+      rentalButton = `<button class="btn-cancel" onclick="cancelReservation('${book.id}')">예약취소</button>`;
+    }
+
+    if (statusText === "대여중" && isMine) {
+      returnButton = `<button class="btn-return" onclick="requestReturn('${book.id}')">반납요청</button>`;
+    }
+
+    if (statusText === "반납요청중" && isMine) {
+      returnButton = `<button class="btn-wait" disabled>반납대기</button>`;
+    }
 
     bookList.innerHTML += `
       <tr>
@@ -492,9 +546,8 @@ function renderBooks(books) {
         <td>${book["도서명"] || ""}</td>
         <td class="status">${statusText}</td>
         <td class="status">${book.current_class || "-"}</td>
-        <td class="btn-cell">
-          ${canReserve ? `<button onclick="reserveBook('${book["관리번호"]}')">대여예약</button>` : "-"}
-        </td>
+        <td class="btn-cell">${rentalButton}</td>
+        <td class="btn-cell">${returnButton}</td>
       </tr>
     `;
   });
@@ -540,7 +593,7 @@ function nextPage() {
   }
 }
 
-async function reserveBook(serialNumber) {
+async function reserveBook(bookId) {
   if (!currentUser) return;
 
   const { error } = await supabaseClient
@@ -550,23 +603,195 @@ async function reserveBook(serialNumber) {
       current_class: currentUser.class_name,
       current_user_id: currentUser.id
     })
-    .eq("관리번호", serialNumber);
+    .eq("id", bookId);
 
   if (error) {
     alert("대여예약 실패: " + error.message);
     return;
   }
 
+  await supabaseClient.from("rental_records").insert([{
+    book_id: bookId,
+    user_id: currentUser.id,
+    class_name: currentUser.class_name,
+    reserved_at: new Date().toISOString(),
+    status: "reserved"
+  }]);
+
   alert("대여예약이 완료되었습니다.");
   loadBooks();
 }
 
+async function cancelReservation(bookId) {
+  if (!confirm("예약을 취소하시겠습니까?")) return;
+
+  const { error } = await supabaseClient
+    .from("books")
+    .update({
+      status: "available",
+      current_class: null,
+      current_user_id: null
+    })
+    .eq("id", bookId)
+    .eq("current_user_id", currentUser.id);
+
+  if (error) {
+    alert("예약취소 실패: " + error.message);
+    return;
+  }
+
+  await supabaseClient
+    .from("rental_records")
+    .update({ status: "cancelled" })
+    .eq("book_id", bookId)
+    .eq("user_id", currentUser.id)
+    .eq("status", "reserved");
+
+  alert("예약이 취소되었습니다.");
+  loadBooks();
+}
+
+async function requestReturn(bookId) {
+  if (!confirm("반납요청을 하시겠습니까?")) return;
+
+  const { error } = await supabaseClient
+    .from("books")
+    .update({
+      status: "return_requested"
+    })
+    .eq("id", bookId)
+    .eq("current_user_id", currentUser.id);
+
+  if (error) {
+    alert("반납요청 실패: " + error.message);
+    return;
+  }
+
+  await supabaseClient
+    .from("rental_records")
+    .update({
+      status: "return_requested",
+      return_requested_at: new Date().toISOString()
+    })
+    .eq("book_id", bookId)
+    .eq("user_id", currentUser.id)
+    .eq("status", "borrowed");
+
+  alert("반납요청이 완료되었습니다.");
+  loadBooks();
+}
+
 async function openAdminPanel() {
-  if (!currentUser || currentUser.role !== "admin") return;
+  if (!currentUser || (currentUser.role !== "admin" && currentUser.role !== "manager")) return;
   showScreen("admin-screen");
-  loadPendingUsers();
-  loadClassChangeRequests();
-  loadManagerRequests();
+
+  if (currentUser.role === "admin") {
+    document.getElementById("admin-only-section").classList.remove("hidden");
+    loadPendingUsers();
+    loadClassChangeRequests();
+    loadManagerRequests();
+  } else {
+    document.getElementById("admin-only-section").classList.add("hidden");
+  }
+
+  loadRentalApproveList();
+  loadReturnApproveList();
+}
+
+async function loadRentalApproveList() {
+  const { data } = await supabaseClient
+    .from("books")
+    .select('id,"관리번호","도서명",current_class,status')
+    .eq("status", "reserved");
+
+  const list = document.getElementById("rental-approve-list");
+  list.innerHTML = "";
+
+  if (!data || !data.length) {
+    list.innerHTML = `<tr><td colspan="4">대여예약 요청이 없습니다.</td></tr>`;
+    return;
+  }
+
+  data.forEach(book => {
+    list.innerHTML += `
+      <tr>
+        <td>${book["관리번호"] || ""}</td>
+        <td>${book["도서명"] || ""}</td>
+        <td>${book.current_class || "-"}</td>
+        <td><button class="btn-approve" onclick="approveRental('${book.id}')">대여승인</button></td>
+      </tr>
+    `;
+  });
+}
+
+async function approveRental(bookId) {
+  await supabaseClient
+    .from("books")
+    .update({ status: "borrowed" })
+    .eq("id", bookId);
+
+  await supabaseClient
+    .from("rental_records")
+    .update({
+      status: "borrowed",
+      approved_at: new Date().toISOString(),
+      approved_by: currentUser.id
+    })
+    .eq("book_id", bookId)
+    .eq("status", "reserved");
+
+  loadRentalApproveList();
+  loadBooks();
+}
+
+async function loadReturnApproveList() {
+  const { data } = await supabaseClient
+    .from("books")
+    .select('id,"관리번호","도서명",current_class,status')
+    .eq("status", "return_requested");
+
+  const list = document.getElementById("return-approve-list");
+  list.innerHTML = "";
+
+  if (!data || !data.length) {
+    list.innerHTML = `<tr><td colspan="4">반납요청이 없습니다.</td></tr>`;
+    return;
+  }
+
+  data.forEach(book => {
+    list.innerHTML += `
+      <tr>
+        <td>${book["관리번호"] || ""}</td>
+        <td>${book["도서명"] || ""}</td>
+        <td>${book.current_class || "-"}</td>
+        <td><button class="btn-approve" onclick="approveReturn('${book.id}')">반납승인</button></td>
+      </tr>
+    `;
+  });
+}
+
+async function approveReturn(bookId) {
+  await supabaseClient
+    .from("books")
+    .update({
+      status: "available",
+      current_class: null,
+      current_user_id: null
+    })
+    .eq("id", bookId);
+
+  await supabaseClient
+    .from("rental_records")
+    .update({
+      status: "returned",
+      returned_at: new Date().toISOString(),
+      approved_by: currentUser.id
+    })
+    .eq("book_id", bookId)
+    .eq("status", "return_requested");
+
+  loadReturnApproveList();
+  loadBooks();
 }
 
 async function loadPendingUsers() {
@@ -589,7 +814,7 @@ async function loadPendingUsers() {
         <td>${user.name}</td>
         <td>${user.username}</td>
         <td>${user.class_name}</td>
-        <td><button onclick="approveUser('${user.id}')">승인</button></td>
+        <td><button class="btn-approve" onclick="approveUser('${user.id}')">승인</button></td>
       </tr>
     `;
   });
@@ -624,7 +849,7 @@ async function loadClassChangeRequests() {
         <td>${req.name}</td>
         <td>${req.current_class}</td>
         <td>${req.requested_class}</td>
-        <td><button onclick="approveClassChange('${req.id}','${req.user_id}','${req.requested_class}')">승인</button></td>
+        <td><button class="btn-approve" onclick="approveClassChange('${req.id}','${req.user_id}','${req.requested_class}')">승인</button></td>
       </tr>
     `;
   });
@@ -638,7 +863,10 @@ async function approveClassChange(requestId, userId, newClass) {
 
   await supabaseClient
     .from("class_change_requests")
-    .update({ status: "approved" })
+    .update({
+      status: "approved",
+      processed_at: new Date().toISOString()
+    })
     .eq("id", requestId);
 
   loadClassChangeRequests();
@@ -664,7 +892,7 @@ async function loadManagerRequests() {
         <td>${req.name}</td>
         <td>${req.current_role}</td>
         <td>${req.requested_role}</td>
-        <td><button onclick="approveManagerRole('${req.id}','${req.user_id}','${req.requested_role}')">승인</button></td>
+        <td><button class="btn-approve" onclick="approveManagerRole('${req.id}','${req.user_id}','${req.requested_role}')">승인</button></td>
       </tr>
     `;
   });
@@ -678,7 +906,11 @@ async function approveManagerRole(requestId, userId, newRole) {
 
   await supabaseClient
     .from("manager_role_requests")
-    .update({ status: "approved" })
+    .update({
+      status: "approved",
+      approved_by: currentUser.id,
+      processed_at: new Date().toISOString()
+    })
     .eq("id", requestId);
 
   loadManagerRequests();
