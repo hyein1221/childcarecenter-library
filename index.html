@@ -466,6 +466,230 @@ document.getElementById("search").addEventListener("input", (e) => {
   renderBooks(filtered);
 });
 </script>
+<!-- =========================
+관리자 페이지 추가 코드
+기존 index.html에 아래 전체 추가/교체
+========================= -->
 
+<!-- 관리자 버튼 (로그인 후 admin만 표시) -->
+<div id="admin-panel-btn" class="hidden">
+  <button onclick="openAdminPanel()">관리자 페이지</button>
+</div>
+
+<!-- 관리자 페이지 -->
+<div id="admin-screen" class="box hidden">
+  <h2>관리자 페이지</h2>
+
+  <h3>회원가입 승인 요청</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>이름</th>
+        <th>아이디</th>
+        <th>반</th>
+        <th>승인</th>
+      </tr>
+    </thead>
+    <tbody id="pending-users-list"></tbody>
+  </table>
+
+  <h3>반 변경 요청</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>이름</th>
+        <th>현재반</th>
+        <th>요청반</th>
+        <th>승인</th>
+      </tr>
+    </thead>
+    <tbody id="class-change-list"></tbody>
+  </table>
+
+  <h3>담당자 권한 요청</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>이름</th>
+        <th>현재권한</th>
+        <th>요청권한</th>
+        <th>승인</th>
+      </tr>
+    </thead>
+    <tbody id="manager-request-list"></tbody>
+  </table>
+
+  <button onclick="closeAdminPanel()">돌아가기</button>
+</div>
+
+<script>
+// =========================
+// 로그인 성공 후 admin 확인
+// =========================
+function afterLoginSuccess() {
+  document.getElementById("user-info").innerText =
+    `${currentUser.name} / ${currentUser.class_name} / ${currentUser.role}`;
+
+  if (currentUser.role === "admin") {
+    document.getElementById("admin-panel-btn").classList.remove("hidden");
+  } else {
+    document.getElementById("admin-panel-btn").classList.add("hidden");
+  }
+
+  showScreen("app-screen");
+  loadBooks();
+}
+
+// login 함수 마지막 부분 교체:
+// currentUser = data;
+// afterLoginSuccess();
+
+// =========================
+// 관리자 화면 열기
+// =========================
+async function openAdminPanel() {
+  showScreen("admin-screen");
+  loadPendingUsers();
+  loadClassChangeRequests();
+  loadManagerRequests();
+}
+
+function closeAdminPanel() {
+  showScreen("app-screen");
+}
+
+// =========================
+// 회원가입 승인 목록
+// =========================
+async function loadPendingUsers() {
+  const { data, error } = await supabaseClient
+    .from("users")
+    .select("*")
+    .eq("approval_status", "pending");
+
+  const list = document.getElementById("pending-users-list");
+  list.innerHTML = "";
+
+  if (!data || !data.length) {
+    list.innerHTML = `<tr><td colspan="4">대기중인 회원이 없습니다.</td></tr>`;
+    return;
+  }
+
+  data.forEach(user => {
+    list.innerHTML += `
+      <tr>
+        <td>${user.name}</td>
+        <td>${user.username}</td>
+        <td>${user.class_name}</td>
+        <td><button onclick="approveUser('${user.id}')">승인</button></td>
+      </tr>
+    `;
+  });
+}
+
+async function approveUser(userId) {
+  await supabaseClient
+    .from("users")
+    .update({ approval_status: "approved" })
+    .eq("id", userId);
+
+  loadPendingUsers();
+}
+
+// =========================
+// 반 변경 승인
+// =========================
+async function loadClassChangeRequests() {
+  const { data } = await supabaseClient
+    .from("class_change_requests")
+    .select("*")
+    .eq("status", "pending");
+
+  const list = document.getElementById("class-change-list");
+  list.innerHTML = "";
+
+  if (!data || !data.length) {
+    list.innerHTML = `<tr><td colspan="4">대기중인 요청이 없습니다.</td></tr>`;
+    return;
+  }
+
+  data.forEach(req => {
+    list.innerHTML += `
+      <tr>
+        <td>${req.name}</td>
+        <td>${req.current_class}</td>
+        <td>${req.requested_class}</td>
+        <td><button onclick="approveClassChange('${req.id}','${req.user_id}','${req.requested_class}')">승인</button></td>
+      </tr>
+    `;
+  });
+}
+
+async function approveClassChange(requestId, userId, newClass) {
+  await supabaseClient
+    .from("users")
+    .update({ class_name: newClass })
+    .eq("id", userId);
+
+  await supabaseClient
+    .from("class_change_requests")
+    .update({ status: "approved" })
+    .eq("id", requestId);
+
+  loadClassChangeRequests();
+}
+
+// =========================
+// 담당자 권한 승인
+// =========================
+async function loadManagerRequests() {
+  const { data } = await supabaseClient
+    .from("manager_role_requests")
+    .select("*")
+    .eq("status", "pending");
+
+  const list = document.getElementById("manager-request-list");
+  list.innerHTML = "";
+
+  if (!data || !data.length) {
+    list.innerHTML = `<tr><td colspan="4">대기중인 요청이 없습니다.</td></tr>`;
+    return;
+  }
+
+  data.forEach(req => {
+    list.innerHTML += `
+      <tr>
+        <td>${req.name}</td>
+        <td>${req.current_role}</td>
+        <td>${req.requested_role}</td>
+        <td><button onclick="approveManagerRole('${req.id}','${req.user_id}','${req.requested_role}')">승인</button></td>
+      </tr>
+    `;
+  });
+}
+
+async function approveManagerRole(requestId, userId, newRole) {
+  await supabaseClient
+    .from("users")
+    .update({ role: newRole })
+    .eq("id", userId);
+
+  await supabaseClient
+    .from("manager_role_requests")
+    .update({ status: "approved" })
+    .eq("id", requestId);
+
+  loadManagerRequests();
+}
+
+// =========================
+// 로그아웃 시 관리자 버튼 숨김
+// =========================
+function logout() {
+  currentUser = null;
+  document.getElementById("admin-panel-btn").classList.add("hidden");
+  showScreen("login-screen");
+}
+</script>
 </body>
 </html>
