@@ -5,88 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>탕정삼성어린이집 도서관리 시스템</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      background: #fafafa;
-    }
-
-    h1 {
-      margin-bottom: 20px;
-    }
-
-    .top {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-
-    button {
-      padding: 10px 14px;
-      cursor: pointer;
-      border: 1px solid #ccc;
-      background: white;
-    }
-
-    input {
-      padding: 12px;
-      width: 100%;
-      margin-bottom: 15px;
-      box-sizing: border-box;
-      font-size: 14px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      table-layout: fixed;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      font-size: 14px;
-      word-break: keep-all;
-      vertical-align: middle;
-      text-align: left;
-    }
-
-    th {
-      background: #f1f1f1;
-      text-align: center;
-    }
-
-    .status {
-      text-align: center;
-    }
-
-    .btn-cell {
-      text-align: center;
-    }
-
-    .empty {
-      text-align: center;
-      padding: 20px;
-    }
+    body { font-family: sans-serif; padding: 20px; background:#fafafa; }
+    h1 { margin-bottom: 20px; }
+    .box { background:white; padding:20px; border:1px solid #ddd; max-width:420px; margin-bottom:20px; }
+    input, select { padding:12px; width:100%; margin-bottom:10px; box-sizing:border-box; }
+    button { padding:10px 14px; cursor:pointer; border:1px solid #ccc; background:white; }
+    .hidden { display:none; }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+    table { width:100%; border-collapse:collapse; background:white; table-layout:fixed; }
+    th, td { border:1px solid #ddd; padding:8px; font-size:14px; word-break:keep-all; vertical-align:middle; }
+    th { background:#f1f1f1; text-align:center; }
+    .status, .btn-cell { text-align:center; }
   </style>
 </head>
+
 <body>
 
-  <h1>탕정삼성어린이집 도서관리 시스템</h1>
+<h1>탕정삼성어린이집 도서관리 시스템</h1>
 
+<!-- 로그인 화면 -->
+<div id="login-screen" class="box">
+  <h2>로그인</h2>
+  <input id="login-username" placeholder="아이디" />
+  <input id="login-password" type="password" placeholder="비밀번호" />
+  <button onclick="login()">로그인</button>
+  <button onclick="showSignup()">회원가입</button>
+  <p id="login-message"></p>
+</div>
+
+<!-- 회원가입 화면 -->
+<div id="signup-screen" class="box hidden">
+  <h2>회원가입</h2>
+  <input id="signup-name" placeholder="이름" />
+  <input id="signup-username" placeholder="아이디" />
+  <input id="signup-password" type="password" placeholder="비밀번호" />
+
+  <select id="signup-class">
+    <option value="">반 선택</option>
+    <option value="꿈빛반">꿈빛반</option>
+    <option value="새싹반">새싹반</option>
+    <option value="열매반">열매반</option>
+    <option value="향기반">향기반</option>
+    <option value="사무실">사무실</option>
+  </select>
+
+  <button onclick="signup()">가입 신청</button>
+  <button onclick="showLogin()">로그인으로 돌아가기</button>
+  <p id="signup-message"></p>
+</div>
+
+<!-- 도서 목록 화면 -->
+<div id="app-screen" class="hidden">
   <div class="top">
-    <button>로그인</button>
-    <button>회원가입</button>
+    <div>
+      <strong id="user-info"></strong>
+    </div>
+    <button onclick="logout()">로그아웃</button>
   </div>
 
-  <input
-    type="text"
-    id="search"
-    placeholder="도서명 / 관리번호 / 분류명 검색"
-  />
+  <input id="search" placeholder="도서명 / 관리번호 / 분류명 검색" />
 
   <table>
     <thead>
@@ -101,94 +79,177 @@
     </thead>
     <tbody id="book-list"></tbody>
   </table>
+</div>
 
-  <script>
-    const supabaseUrl = "https://vohcugxfwxdvkbcpjcgl.supabase.co";
-    const supabaseKey = "sb_publishable_Q0cXaglzBaz9Py2oct_NTQ_vMHsUeSQ";
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+<script>
+const supabaseUrl = "https://vohcugxfwxdvkbcpjcgl.supabase.co";
+const supabaseKey = "sb_publishable_Q0cXaglzBaz9Py2oct_NTQ_vMHsUeSQ";
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let allBooks = [];
+let currentUser = null;
+let allBooks = [];
 
-    async function loadBooks() {
-      const { data, error } = await supabaseClient
-        .from("books")
-        .select('"관리번호","분류명","도서명",status,current_class')
-        .limit(5000);
+function showSignup() {
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("signup-screen").classList.remove("hidden");
+}
 
-      const bookList = document.getElementById("book-list");
+function showLogin() {
+  document.getElementById("signup-screen").classList.add("hidden");
+  document.getElementById("login-screen").classList.remove("hidden");
+}
 
-      if (error) {
-        bookList.innerHTML = `
-          <tr>
-            <td colspan="6" class="empty">
-              데이터를 불러오지 못했습니다: ${error.message}
-            </td>
-          </tr>
-        `;
-        return;
-      }
+async function signup() {
+  const name = document.getElementById("signup-name").value.trim();
+  const username = document.getElementById("signup-username").value.trim();
+  const password = document.getElementById("signup-password").value.trim();
+  const className = document.getElementById("signup-class").value;
 
-      allBooks = data || [];
-      renderBooks(allBooks);
-    }
+  if (!name || !username || !password || !className) {
+    document.getElementById("signup-message").innerText = "모든 항목을 입력해주세요.";
+    return;
+  }
 
-    function renderBooks(books) {
-      const bookList = document.getElementById("book-list");
-      bookList.innerHTML = "";
+  const { error } = await supabaseClient.from("users").insert([{
+    name: name,
+    username: username,
+    password: password,
+    class_name: className,
+    role: "teacher",
+    approval_status: "pending"
+  }]);
 
-      if (!books || books.length === 0) {
-        bookList.innerHTML = `
-          <tr>
-            <td colspan="6" class="empty">
-              검색 결과가 없습니다.
-            </td>
-          </tr>
-        `;
-        return;
-      }
+  if (error) {
+    document.getElementById("signup-message").innerText = "가입 실패: " + error.message;
+    return;
+  }
 
-      books.forEach(book => {
-        const statusText =
-          book.status === "available" || !book.status
-            ? "대여가능"
-            : book.status;
+  document.getElementById("signup-message").innerText = "가입 신청 완료! 관리자 승인 후 로그인할 수 있습니다.";
+}
 
-        const row = `
-          <tr>
-            <td>${book["관리번호"] || ""}</td>
-            <td>${book["분류명"] || ""}</td>
-            <td>${book["도서명"] || ""}</td>
-            <td class="status">${statusText}</td>
-            <td class="status">${book.current_class || "-"}</td>
-            <td class="btn-cell">
-              <button>대여예약</button>
-            </td>
-          </tr>
-        `;
+async function login() {
+  const username = document.getElementById("login-username").value.trim();
+  const password = document.getElementById("login-password").value.trim();
 
-        bookList.innerHTML += row;
-      });
-    }
+  const { data, error } = await supabaseClient
+    .from("users")
+    .select("*")
+    .eq("username", username)
+    .eq("password", password)
+    .single();
 
-    document.getElementById("search").addEventListener("input", (e) => {
-      const keyword = e.target.value.trim();
+  if (error || !data) {
+    document.getElementById("login-message").innerText = "아이디 또는 비밀번호가 맞지 않습니다.";
+    return;
+  }
 
-      if (!keyword) {
-        renderBooks(allBooks);
-        return;
-      }
+  if (data.approval_status !== "approved") {
+    document.getElementById("login-message").innerText = "관리자 승인 대기중입니다.";
+    return;
+  }
 
-      const filtered = allBooks.filter(book =>
-        (book["도서명"] || "").includes(keyword) ||
-        (book["관리번호"] || "").includes(keyword) ||
-        (book["분류명"] || "").includes(keyword)
-      );
+  currentUser = data;
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("app-screen").classList.remove("hidden");
+  document.getElementById("user-info").innerText =
+    `${currentUser.name} / ${currentUser.class_name}`;
 
-      renderBooks(filtered);
-    });
+  loadBooks();
+}
 
-    loadBooks();
-  </script>
+function logout() {
+  currentUser = null;
+  document.getElementById("app-screen").classList.add("hidden");
+  document.getElementById("login-screen").classList.remove("hidden");
+}
+
+async function loadBooks() {
+  const { data, error } = await supabaseClient
+    .from("books")
+    .select('"관리번호","분류명","도서명",status,current_class')
+    .limit(5000);
+
+  if (error) {
+    document.getElementById("book-list").innerHTML =
+      `<tr><td colspan="6">도서 목록을 불러오지 못했습니다.</td></tr>`;
+    return;
+  }
+
+  allBooks = data || [];
+  renderBooks(allBooks);
+}
+
+function renderBooks(books) {
+  const bookList = document.getElementById("book-list");
+  bookList.innerHTML = "";
+
+  if (!books.length) {
+    bookList.innerHTML = `<tr><td colspan="6">검색 결과가 없습니다.</td></tr>`;
+    return;
+  }
+
+  books.forEach(book => {
+    const statusText =
+      book.status === "available" || !book.status ? "대여가능" :
+      book.status === "reserved" ? "대여예약중" :
+      book.status === "borrowed" ? "대여중" :
+      book.status;
+
+    const canReserve = statusText === "대여가능";
+
+    bookList.innerHTML += `
+      <tr>
+        <td>${book["관리번호"] || ""}</td>
+        <td>${book["분류명"] || ""}</td>
+        <td>${book["도서명"] || ""}</td>
+        <td class="status">${statusText}</td>
+        <td class="status">${book.current_class || "-"}</td>
+        <td class="btn-cell">
+          ${canReserve ? `<button onclick="reserveBook('${book["관리번호"]}')">대여예약</button>` : "-"}
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function reserveBook(serialNumber) {
+  if (!currentUser) return;
+
+  const { error } = await supabaseClient
+    .from("books")
+    .update({
+      status: "reserved",
+      current_class: currentUser.class_name,
+      current_user_id: currentUser.id
+    })
+    .eq("관리번호", serialNumber);
+
+  if (error) {
+    alert("대여예약 실패: " + error.message);
+    return;
+  }
+
+  alert("대여예약이 완료되었습니다.");
+  loadBooks();
+}
+
+document.getElementById("search").addEventListener("input", (e) => {
+  const keyword = e.target.value.trim();
+
+  if (!keyword) {
+    renderBooks(allBooks);
+    return;
+  }
+
+  const filtered = allBooks.filter(book =>
+    (book["도서명"] || "").includes(keyword) ||
+    (book["관리번호"] || "").includes(keyword) ||
+    (book["분류명"] || "").includes(keyword)
+  );
+
+  renderBooks(filtered);
+});
+</script>
 
 </body>
 </html>
