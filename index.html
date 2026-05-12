@@ -8,18 +8,20 @@
   <style>
     body { font-family: sans-serif; padding:20px; background:#fafafa; }
     h1 { margin-bottom:20px; }
-    .box { background:white; padding:20px; border:1px solid #ddd; max-width:430px; margin-bottom:20px; }
+    .box { background:white; padding:20px; border:1px solid #ddd; max-width:900px; margin-bottom:20px; }
     input, select { width:100%; padding:12px; margin-bottom:10px; box-sizing:border-box; font-size:14px; }
     button { padding:10px 14px; margin:2px; cursor:pointer; border:1px solid #ccc; background:white; }
     .hidden { display:none; }
-    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; gap:10px; }
     table { width:100%; border-collapse:collapse; background:white; table-layout:fixed; }
     th, td { border:1px solid #ddd; padding:8px; font-size:14px; word-break:keep-all; vertical-align:middle; }
     th { background:#f1f1f1; text-align:center; }
     .status, .btn-cell { text-align:center; }
     .message { font-size:14px; margin-top:10px; color:#2563eb; }
-    .error { color:red; }
     .notice { font-size:13px; color:#666; }
+    .pagination { margin-top:15px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .pagination button.active { background:#2563eb; color:white; }
+    .page-size-box { max-width:160px; margin-top:10px; }
   </style>
 </head>
 
@@ -115,11 +117,20 @@
     <div>
       <strong id="user-info"></strong>
       <button id="profile-btn">내 정보 변경</button>
+      <button id="admin-panel-btn" class="hidden">관리자 페이지</button>
     </div>
     <button id="logout-btn">로그아웃</button>
   </div>
 
   <input id="search" placeholder="도서명 / 관리번호 / 분류명 검색" />
+
+  <div class="page-size-box">
+    <select id="page-size">
+      <option value="20">20개씩 보기</option>
+      <option value="50">50개씩 보기</option>
+      <option value="100">100개씩 보기</option>
+    </select>
+  </div>
 
   <table>
     <thead>
@@ -134,6 +145,58 @@
     </thead>
     <tbody id="book-list"></tbody>
   </table>
+
+  <div class="pagination">
+    <span id="pagination-info"></span>
+    <button id="prev-page-btn">이전</button>
+    <span id="page-buttons"></span>
+    <button id="next-page-btn">다음</button>
+  </div>
+</div>
+
+<div id="admin-screen" class="box hidden">
+  <h2>관리자 페이지</h2>
+
+  <h3>회원가입 승인 요청</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>이름</th>
+        <th>아이디</th>
+        <th>반</th>
+        <th>승인</th>
+      </tr>
+    </thead>
+    <tbody id="pending-users-list"></tbody>
+  </table>
+
+  <h3>반 변경 요청</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>이름</th>
+        <th>현재반</th>
+        <th>요청반</th>
+        <th>승인</th>
+      </tr>
+    </thead>
+    <tbody id="class-change-list"></tbody>
+  </table>
+
+  <h3>담당자 권한 요청</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>이름</th>
+        <th>현재권한</th>
+        <th>요청권한</th>
+        <th>승인</th>
+      </tr>
+    </thead>
+    <tbody id="manager-request-list"></tbody>
+  </table>
+
+  <button id="admin-back-btn">돌아가기</button>
 </div>
 
 <script>
@@ -142,7 +205,10 @@ const supabaseKey = "sb_publishable_Q0cXaglzBaz9Py2oct_NTQ_vMHsUeSQ";
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentUser = null;
-let allBooks = [];
+let currentPage = 1;
+let pageSize = 20;
+let totalBooks = 0;
+let currentKeyword = "";
 
 const classMap = {
   "만1세": ["햇빛반","달빛반","별빛반","풀빛반","온빛반"],
@@ -159,7 +225,7 @@ function setMessage(id, text, color = "#2563eb") {
 }
 
 function showScreen(screenId) {
-  ["login-screen","signup-screen","find-id-screen","profile-screen","app-screen"].forEach(id => {
+  ["login-screen","signup-screen","find-id-screen","profile-screen","app-screen","admin-screen"].forEach(id => {
     document.getElementById(id).classList.add("hidden");
   });
   document.getElementById(screenId).classList.remove("hidden");
@@ -188,16 +254,11 @@ async function signup() {
     return;
   }
 
-  const { data: existingUser, error: checkError } = await supabaseClient
+  const { data: existingUser } = await supabaseClient
     .from("users")
     .select("username")
     .eq("username", username)
     .maybeSingle();
-
-  if (checkError) {
-    setMessage("signup-message", "아이디 중복 확인 중 오류가 발생했습니다. users 테이블 RLS 설정을 확인해주세요.", "red");
-    return;
-  }
 
   if (existingUser) {
     setMessage("signup-message", "이미 사용 중인 아이디입니다.", "red");
@@ -205,9 +266,9 @@ async function signup() {
   }
 
   const { error } = await supabaseClient.from("users").insert([{
-    name: name,
-    username: username,
-    password: password,
+    name,
+    username,
+    password,
     class_name: className,
     role: "teacher",
     approval_status: "pending"
@@ -257,11 +318,41 @@ async function login() {
   }
 
   currentUser = data;
-  showScreen("app-screen");
+  localStorage.setItem("libraryCurrentUser", JSON.stringify(currentUser));
+  afterLoginSuccess();
+}
+
+function afterLoginSuccess() {
   document.getElementById("user-info").innerText =
     `${currentUser.name} / ${currentUser.class_name} / ${currentUser.role}`;
 
+  if (currentUser.role === "admin") {
+    document.getElementById("admin-panel-btn").classList.remove("hidden");
+  } else {
+    document.getElementById("admin-panel-btn").classList.add("hidden");
+  }
+
+  showScreen("app-screen");
+  currentPage = 1;
   loadBooks();
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem("libraryCurrentUser");
+  document.getElementById("login-username").value = "";
+  document.getElementById("login-password").value = "";
+  document.getElementById("login-message").innerText = "";
+  document.getElementById("admin-panel-btn").classList.add("hidden");
+  showScreen("login-screen");
+}
+
+function restoreLogin() {
+  const savedUser = localStorage.getItem("libraryCurrentUser");
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    afterLoginSuccess();
+  }
 }
 
 async function findId() {
@@ -286,14 +377,6 @@ async function findId() {
   }
 
   setMessage("find-id-message", `아이디: ${data.username}`);
-}
-
-function logout() {
-  currentUser = null;
-  document.getElementById("login-username").value = "";
-  document.getElementById("login-password").value = "";
-  document.getElementById("login-message").innerText = "";
-  showScreen("login-screen");
 }
 
 function openProfile() {
@@ -322,6 +405,7 @@ async function changePassword() {
   }
 
   currentUser.password = newPassword;
+  localStorage.setItem("libraryCurrentUser", JSON.stringify(currentUser));
   document.getElementById("new-password").value = "";
   setMessage("profile-message", "비밀번호가 변경되었습니다.");
 }
@@ -353,19 +437,33 @@ async function requestClassChange() {
 }
 
 async function loadBooks() {
-  const { data, error } = await supabaseClient
+  const bookList = document.getElementById("book-list");
+  bookList.innerHTML = `<tr><td colspan="6">도서 목록을 불러오는 중입니다...</td></tr>`;
+
+  const start = (currentPage - 1) * pageSize;
+  const end = start + pageSize - 1;
+
+  let query = supabaseClient
     .from("books")
-    .select('"관리번호","분류명","도서명",status,current_class')
-    .limit(5000);
+    .select('"관리번호","분류명","도서명",status,current_class', { count: "exact" })
+    .order("관리번호", { ascending: true })
+    .range(start, end);
+
+  if (currentKeyword) {
+    query = query.or(`도서명.ilike.%${currentKeyword}%,관리번호.ilike.%${currentKeyword}%,분류명.ilike.%${currentKeyword}%`);
+  }
+
+  const { data, error, count } = await query;
 
   if (error) {
-    document.getElementById("book-list").innerHTML =
+    bookList.innerHTML =
       `<tr><td colspan="6">도서 목록을 불러오지 못했습니다: ${error.message}</td></tr>`;
     return;
   }
 
-  allBooks = data || [];
-  renderBooks(allBooks);
+  totalBooks = count || 0;
+  renderBooks(data || []);
+  renderPagination();
 }
 
 function renderBooks(books) {
@@ -402,6 +500,46 @@ function renderBooks(books) {
   });
 }
 
+function renderPagination() {
+  const totalPages = Math.ceil(totalBooks / pageSize);
+  const pageButtons = document.getElementById("page-buttons");
+  const paginationInfo = document.getElementById("pagination-info");
+
+  paginationInfo.innerText = `총 ${totalBooks}권 / ${currentPage}쪽`;
+  pageButtons.innerHTML = "";
+
+  if (totalPages <= 1) return;
+
+  let startPage = Math.max(1, currentPage - 3);
+  let endPage = Math.min(totalPages, currentPage + 3);
+
+  for (let i = startPage; i <= endPage; i++) {
+    pageButtons.innerHTML += `
+      <button class="${i === currentPage ? "active" : ""}" onclick="goToPage(${i})">${i}</button>
+    `;
+  }
+}
+
+function goToPage(page) {
+  currentPage = page;
+  loadBooks();
+}
+
+function prevPage() {
+  if (currentPage > 1) {
+    currentPage--;
+    loadBooks();
+  }
+}
+
+function nextPage() {
+  const totalPages = Math.ceil(totalBooks / pageSize);
+  if (currentPage < totalPages) {
+    currentPage++;
+    loadBooks();
+  }
+}
+
 async function reserveBook(serialNumber) {
   if (!currentUser) return;
 
@@ -423,146 +561,16 @@ async function reserveBook(serialNumber) {
   loadBooks();
 }
 
-document.getElementById("signup-open-btn").addEventListener("click", () => showScreen("signup-screen"));
-document.getElementById("login-open-btn").addEventListener("click", () => showScreen("login-screen"));
-document.getElementById("find-id-btn").addEventListener("click", () => showScreen("find-id-screen"));
-document.getElementById("find-id-back-btn").addEventListener("click", () => showScreen("login-screen"));
-
-document.getElementById("signup-age").addEventListener("change", () => updateClassOptions("signup-age", "signup-class"));
-document.getElementById("find-age").addEventListener("change", () => updateClassOptions("find-age", "find-class"));
-document.getElementById("change-age").addEventListener("change", () => updateClassOptions("change-age", "change-class"));
-
-document.getElementById("signup-btn").addEventListener("click", signup);
-document.getElementById("find-id-submit-btn").addEventListener("click", findId);
-document.getElementById("login-btn").addEventListener("click", login);
-document.getElementById("logout-btn").addEventListener("click", logout);
-document.getElementById("profile-btn").addEventListener("click", openProfile);
-document.getElementById("back-btn").addEventListener("click", () => showScreen("app-screen"));
-document.getElementById("change-password-btn").addEventListener("click", changePassword);
-document.getElementById("request-class-change-btn").addEventListener("click", requestClassChange);
-
-document.getElementById("login-username").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") login();
-});
-
-document.getElementById("login-password").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") login();
-});
-
-document.getElementById("search").addEventListener("input", (e) => {
-  const keyword = e.target.value.trim();
-
-  if (!keyword) {
-    renderBooks(allBooks);
-    return;
-  }
-
-  const filtered = allBooks.filter(book =>
-    (book["도서명"] || "").includes(keyword) ||
-    (book["관리번호"] || "").includes(keyword) ||
-    (book["분류명"] || "").includes(keyword)
-  );
-
-  renderBooks(filtered);
-});
-</script>
-<!-- =========================
-관리자 페이지 추가 코드
-기존 index.html에 아래 전체 추가/교체
-========================= -->
-
-<!-- 관리자 버튼 (로그인 후 admin만 표시) -->
-<div id="admin-panel-btn" class="hidden">
-  <button onclick="openAdminPanel()">관리자 페이지</button>
-</div>
-
-<!-- 관리자 페이지 -->
-<div id="admin-screen" class="box hidden">
-  <h2>관리자 페이지</h2>
-
-  <h3>회원가입 승인 요청</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>이름</th>
-        <th>아이디</th>
-        <th>반</th>
-        <th>승인</th>
-      </tr>
-    </thead>
-    <tbody id="pending-users-list"></tbody>
-  </table>
-
-  <h3>반 변경 요청</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>이름</th>
-        <th>현재반</th>
-        <th>요청반</th>
-        <th>승인</th>
-      </tr>
-    </thead>
-    <tbody id="class-change-list"></tbody>
-  </table>
-
-  <h3>담당자 권한 요청</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>이름</th>
-        <th>현재권한</th>
-        <th>요청권한</th>
-        <th>승인</th>
-      </tr>
-    </thead>
-    <tbody id="manager-request-list"></tbody>
-  </table>
-
-  <button onclick="closeAdminPanel()">돌아가기</button>
-</div>
-
-<script>
-// =========================
-// 로그인 성공 후 admin 확인
-// =========================
-function afterLoginSuccess() {
-  document.getElementById("user-info").innerText =
-    `${currentUser.name} / ${currentUser.class_name} / ${currentUser.role}`;
-
-  if (currentUser.role === "admin") {
-    document.getElementById("admin-panel-btn").classList.remove("hidden");
-  } else {
-    document.getElementById("admin-panel-btn").classList.add("hidden");
-  }
-
-  showScreen("app-screen");
-  loadBooks();
-}
-
-// login 함수 마지막 부분 교체:
-// currentUser = data;
-// afterLoginSuccess();
-
-// =========================
-// 관리자 화면 열기
-// =========================
 async function openAdminPanel() {
+  if (!currentUser || currentUser.role !== "admin") return;
   showScreen("admin-screen");
   loadPendingUsers();
   loadClassChangeRequests();
   loadManagerRequests();
 }
 
-function closeAdminPanel() {
-  showScreen("app-screen");
-}
-
-// =========================
-// 회원가입 승인 목록
-// =========================
 async function loadPendingUsers() {
-  const { data, error } = await supabaseClient
+  const { data } = await supabaseClient
     .from("users")
     .select("*")
     .eq("approval_status", "pending");
@@ -596,9 +604,6 @@ async function approveUser(userId) {
   loadPendingUsers();
 }
 
-// =========================
-// 반 변경 승인
-// =========================
 async function loadClassChangeRequests() {
   const { data } = await supabaseClient
     .from("class_change_requests")
@@ -639,9 +644,6 @@ async function approveClassChange(requestId, userId, newClass) {
   loadClassChangeRequests();
 }
 
-// =========================
-// 담당자 권한 승인
-// =========================
 async function loadManagerRequests() {
   const { data } = await supabaseClient
     .from("manager_role_requests")
@@ -682,14 +684,50 @@ async function approveManagerRole(requestId, userId, newRole) {
   loadManagerRequests();
 }
 
-// =========================
-// 로그아웃 시 관리자 버튼 숨김
-// =========================
-function logout() {
-  currentUser = null;
-  document.getElementById("admin-panel-btn").classList.add("hidden");
-  showScreen("login-screen");
-}
+document.getElementById("signup-open-btn").addEventListener("click", () => showScreen("signup-screen"));
+document.getElementById("login-open-btn").addEventListener("click", () => showScreen("login-screen"));
+document.getElementById("find-id-btn").addEventListener("click", () => showScreen("find-id-screen"));
+document.getElementById("find-id-back-btn").addEventListener("click", () => showScreen("login-screen"));
+
+document.getElementById("signup-age").addEventListener("change", () => updateClassOptions("signup-age", "signup-class"));
+document.getElementById("find-age").addEventListener("change", () => updateClassOptions("find-age", "find-class"));
+document.getElementById("change-age").addEventListener("change", () => updateClassOptions("change-age", "change-class"));
+
+document.getElementById("signup-btn").addEventListener("click", signup);
+document.getElementById("find-id-submit-btn").addEventListener("click", findId);
+document.getElementById("login-btn").addEventListener("click", login);
+document.getElementById("logout-btn").addEventListener("click", logout);
+document.getElementById("profile-btn").addEventListener("click", openProfile);
+document.getElementById("admin-panel-btn").addEventListener("click", openAdminPanel);
+document.getElementById("admin-back-btn").addEventListener("click", () => showScreen("app-screen"));
+document.getElementById("back-btn").addEventListener("click", () => showScreen("app-screen"));
+document.getElementById("change-password-btn").addEventListener("click", changePassword);
+document.getElementById("request-class-change-btn").addEventListener("click", requestClassChange);
+document.getElementById("prev-page-btn").addEventListener("click", prevPage);
+document.getElementById("next-page-btn").addEventListener("click", nextPage);
+
+document.getElementById("page-size").addEventListener("change", (e) => {
+  pageSize = Number(e.target.value);
+  currentPage = 1;
+  loadBooks();
+});
+
+document.getElementById("login-username").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") login();
+});
+
+document.getElementById("login-password").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") login();
+});
+
+document.getElementById("search").addEventListener("input", (e) => {
+  currentKeyword = e.target.value.trim();
+  currentPage = 1;
+  loadBooks();
+});
+
+restoreLogin();
 </script>
+
 </body>
 </html>
