@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>탕정삼성어린이집 도서관리 시스템</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
   <style>
     body {
       font-family: sans-serif;
@@ -25,6 +26,8 @@
     button {
       padding: 10px 14px;
       cursor: pointer;
+      border: 1px solid #ccc;
+      background: white;
     }
 
     input {
@@ -32,6 +35,7 @@
       width: 100%;
       margin-bottom: 15px;
       box-sizing: border-box;
+      font-size: 14px;
     }
 
     table {
@@ -47,10 +51,12 @@
       font-size: 14px;
       word-break: keep-all;
       vertical-align: middle;
+      text-align: left;
     }
 
     th {
       background: #f1f1f1;
+      text-align: center;
     }
 
     .status {
@@ -59,6 +65,11 @@
 
     .btn-cell {
       text-align: center;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 20px;
     }
   </style>
 </head>
@@ -71,7 +82,11 @@
     <button>회원가입</button>
   </div>
 
-  <input type="text" id="search" placeholder="도서명 또는 관리번호 검색" />
+  <input
+    type="text"
+    id="search"
+    placeholder="도서명 / 관리번호 / 분류명 검색"
+  />
 
   <table>
     <thead>
@@ -92,40 +107,47 @@
     const supabaseKey = "sb_publishable_Q0cXaglzBaz9Py2oct_NTQ_vMHsUeSQ";
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-    async function loadBooks(searchTerm = "") {
-      let query = supabaseClient
+    let allBooks = [];
+
+    async function loadBooks() {
+      const { data, error } = await supabaseClient
         .from("books")
         .select('"관리번호","분류명","도서명",status,current_class')
-        .limit(500);
-
-      if (searchTerm) {
-        query = query.or(`도서명.ilike.%${searchTerm}%,관리번호.ilike.%${searchTerm}%`);
-      }
-
-      const { data, error } = await query;
+        .limit(5000);
 
       const bookList = document.getElementById("book-list");
-      bookList.innerHTML = "";
 
       if (error) {
         bookList.innerHTML = `
           <tr>
-            <td colspan="6">데이터를 불러오지 못했습니다: ${error.message}</td>
+            <td colspan="6" class="empty">
+              데이터를 불러오지 못했습니다: ${error.message}
+            </td>
           </tr>
         `;
         return;
       }
 
-      if (!data || data.length === 0) {
+      allBooks = data || [];
+      renderBooks(allBooks);
+    }
+
+    function renderBooks(books) {
+      const bookList = document.getElementById("book-list");
+      bookList.innerHTML = "";
+
+      if (!books || books.length === 0) {
         bookList.innerHTML = `
           <tr>
-            <td colspan="6">검색 결과가 없습니다.</td>
+            <td colspan="6" class="empty">
+              검색 결과가 없습니다.
+            </td>
           </tr>
         `;
         return;
       }
 
-      data.forEach(book => {
+      books.forEach(book => {
         const statusText =
           book.status === "available" || !book.status
             ? "대여가능"
@@ -138,7 +160,9 @@
             <td>${book["도서명"] || ""}</td>
             <td class="status">${statusText}</td>
             <td class="status">${book.current_class || "-"}</td>
-            <td class="btn-cell"><button>대여예약</button></td>
+            <td class="btn-cell">
+              <button>대여예약</button>
+            </td>
           </tr>
         `;
 
@@ -147,7 +171,20 @@
     }
 
     document.getElementById("search").addEventListener("input", (e) => {
-      loadBooks(e.target.value);
+      const keyword = e.target.value.trim();
+
+      if (!keyword) {
+        renderBooks(allBooks);
+        return;
+      }
+
+      const filtered = allBooks.filter(book =>
+        (book["도서명"] || "").includes(keyword) ||
+        (book["관리번호"] || "").includes(keyword) ||
+        (book["분류명"] || "").includes(keyword)
+      );
+
+      renderBooks(filtered);
     });
 
     loadBooks();
