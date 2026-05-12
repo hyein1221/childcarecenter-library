@@ -24,7 +24,6 @@
 
 <h1>탕정삼성어린이집 도서관리 시스템</h1>
 
-<!-- 로그인 화면 -->
 <div id="login-screen" class="box">
   <h2>로그인</h2>
   <input id="login-username" placeholder="아이디" />
@@ -34,20 +33,23 @@
   <p id="login-message"></p>
 </div>
 
-<!-- 회원가입 화면 -->
 <div id="signup-screen" class="box hidden">
   <h2>회원가입</h2>
   <input id="signup-name" placeholder="이름" />
   <input id="signup-username" placeholder="아이디" />
   <input id="signup-password" type="password" placeholder="비밀번호" />
 
+  <select id="signup-age" onchange="updateClassOptions()">
+    <option value="">연령 선택</option>
+    <option value="만1세">만1세</option>
+    <option value="만2세">만2세</option>
+    <option value="만3세">만3세</option>
+    <option value="만4세">만4세</option>
+    <option value="만5세">만5세</option>
+  </select>
+
   <select id="signup-class">
     <option value="">반 선택</option>
-    <option value="꿈빛반">꿈빛반</option>
-    <option value="새싹반">새싹반</option>
-    <option value="열매반">열매반</option>
-    <option value="향기반">향기반</option>
-    <option value="사무실">사무실</option>
   </select>
 
   <button onclick="signup()">가입 신청</button>
@@ -55,12 +57,9 @@
   <p id="signup-message"></p>
 </div>
 
-<!-- 도서 목록 화면 -->
 <div id="app-screen" class="hidden">
   <div class="top">
-    <div>
-      <strong id="user-info"></strong>
-    </div>
+    <strong id="user-info"></strong>
     <button onclick="logout()">로그아웃</button>
   </div>
 
@@ -89,6 +88,26 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 let currentUser = null;
 let allBooks = [];
 
+const classMap = {
+  "만1세": ["햇빛반", "달빛반", "별빛반", "풀빛반", "온빛반"],
+  "만2세": ["예빛반", "봄빛반", "물빛반", "꿈빛반"],
+  "만3세": ["한빛반", "은빛반", "새빛반"],
+  "만4세": ["윤빛반", "꽃빛반"],
+  "만5세": ["들빛반", "솔빛반"]
+};
+
+function updateClassOptions() {
+  const age = document.getElementById("signup-age").value;
+  const classSelect = document.getElementById("signup-class");
+  classSelect.innerHTML = `<option value="">반 선택</option>`;
+
+  if (!age || !classMap[age]) return;
+
+  classMap[age].forEach(className => {
+    classSelect.innerHTML += `<option value="${className}">${className}</option>`;
+  });
+}
+
 function showSignup() {
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("signup-screen").classList.remove("hidden");
@@ -103,17 +122,18 @@ async function signup() {
   const name = document.getElementById("signup-name").value.trim();
   const username = document.getElementById("signup-username").value.trim();
   const password = document.getElementById("signup-password").value.trim();
+  const age = document.getElementById("signup-age").value;
   const className = document.getElementById("signup-class").value;
 
-  if (!name || !username || !password || !className) {
+  if (!name || !username || !password || !age || !className) {
     document.getElementById("signup-message").innerText = "모든 항목을 입력해주세요.";
     return;
   }
 
   const { error } = await supabaseClient.from("users").insert([{
-    name: name,
-    username: username,
-    password: password,
+    name,
+    username,
+    password,
     class_name: className,
     role: "teacher",
     approval_status: "pending"
@@ -124,7 +144,8 @@ async function signup() {
     return;
   }
 
-  document.getElementById("signup-message").innerText = "가입 신청 완료! 관리자 승인 후 로그인할 수 있습니다.";
+  document.getElementById("signup-message").innerText =
+    "가입 신청 완료! 관리자 승인 후 로그인할 수 있습니다.";
 }
 
 async function login() {
@@ -151,8 +172,7 @@ async function login() {
   currentUser = data;
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("app-screen").classList.remove("hidden");
-  document.getElementById("user-info").innerText =
-    `${currentUser.name} / ${currentUser.class_name}`;
+  document.getElementById("user-info").innerText = `${currentUser.name} / ${currentUser.class_name}`;
 
   loadBooks();
 }
@@ -241,15 +261,4 @@ document.getElementById("search").addEventListener("input", (e) => {
     return;
   }
 
-  const filtered = allBooks.filter(book =>
-    (book["도서명"] || "").includes(keyword) ||
-    (book["관리번호"] || "").includes(keyword) ||
-    (book["분류명"] || "").includes(keyword)
-  );
-
-  renderBooks(filtered);
-});
-</script>
-
-</body>
-</html>
+  const
