@@ -5,11 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>탕정삼성어린이집 도서관리 시스템</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <style>
     body { font-family: sans-serif; padding:20px; background:#fafafa; }
     h1 { margin-bottom:20px; }
-    .box { background:white; padding:20px; border:1px solid #ddd; max-width:420px; margin-bottom:20px; }
+    .box { background:white; padding:20px; border:1px solid #ddd; max-width:430px; margin-bottom:20px; }
     input, select { width:100%; padding:12px; margin-bottom:10px; box-sizing:border-box; font-size:14px; }
     button { padding:10px 14px; margin:2px; cursor:pointer; border:1px solid #ccc; background:white; }
     .hidden { display:none; }
@@ -18,7 +17,8 @@
     th, td { border:1px solid #ddd; padding:8px; font-size:14px; word-break:keep-all; vertical-align:middle; }
     th { background:#f1f1f1; text-align:center; }
     .status, .btn-cell { text-align:center; }
-    .message { font-size:14px; margin-top:10px; }
+    .message { font-size:14px; margin-top:10px; color:#2563eb; }
+    .error { color:red; }
     .notice { font-size:13px; color:#666; }
   </style>
 </head>
@@ -86,7 +86,6 @@
 
 <div id="profile-screen" class="box hidden">
   <h2>내 정보 변경</h2>
-
   <p><strong>이름:</strong> <span id="profile-name"></span></p>
   <p><strong>현재 반:</strong> <span id="profile-current-class"></span></p>
 
@@ -108,7 +107,6 @@
   <button id="change-password-btn">비밀번호 변경</button>
   <button id="request-class-change-btn">반 변경 요청</button>
   <button id="back-btn">돌아가기</button>
-
   <p id="profile-message" class="message"></p>
 </div>
 
@@ -171,7 +169,9 @@ function updateClassOptions(ageId, classId) {
   const age = document.getElementById(ageId).value;
   const classSelect = document.getElementById(classId);
   classSelect.innerHTML = `<option value="">반 선택</option>`;
+
   if (!classMap[age]) return;
+
   classMap[age].forEach(cls => {
     classSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
   });
@@ -188,11 +188,16 @@ async function signup() {
     return;
   }
 
-  const { data: existingUser } = await supabaseClient
+  const { data: existingUser, error: checkError } = await supabaseClient
     .from("users")
     .select("username")
     .eq("username", username)
     .maybeSingle();
+
+  if (checkError) {
+    setMessage("signup-message", "아이디 중복 확인 중 오류가 발생했습니다. users 테이블 RLS 설정을 확인해주세요.", "red");
+    return;
+  }
 
   if (existingUser) {
     setMessage("signup-message", "이미 사용 중인 아이디입니다.", "red");
@@ -200,9 +205,9 @@ async function signup() {
   }
 
   const { error } = await supabaseClient.from("users").insert([{
-    name,
-    username,
-    password,
+    name: name,
+    username: username,
+    password: password,
     class_name: className,
     role: "teacher",
     approval_status: "pending"
@@ -213,7 +218,7 @@ async function signup() {
     return;
   }
 
-  setMessage("signup-message", "가입 신청 완료! 관리자 승인 후 로그인할 수 있습니다.", "#2563eb");
+  setMessage("signup-message", "가입 신청 완료! 관리자 승인 후 로그인할 수 있습니다.");
 }
 
 async function login() {
@@ -232,7 +237,7 @@ async function login() {
     .maybeSingle();
 
   if (error) {
-    setMessage("login-message", "로그인 정보를 확인하는 중 오류가 발생했습니다.", "red");
+    setMessage("login-message", "로그인 정보를 확인하는 중 오류가 발생했습니다: " + error.message, "red");
     return;
   }
 
@@ -247,14 +252,15 @@ async function login() {
   }
 
   if (data.approval_status !== "approved") {
-    setMessage("login-message", "관리자 승인 대기중입니다.", "#2563eb");
+    setMessage("login-message", "관리자 승인 대기중입니다.");
     return;
   }
 
   currentUser = data;
   showScreen("app-screen");
   document.getElementById("user-info").innerText =
-    `${currentUser.name} / ${currentUser.class_name}`;
+    `${currentUser.name} / ${currentUser.class_name} / ${currentUser.role}`;
+
   loadBooks();
 }
 
@@ -279,7 +285,7 @@ async function findId() {
     return;
   }
 
-  setMessage("find-id-message", `아이디: ${data.username}`, "#2563eb");
+  setMessage("find-id-message", `아이디: ${data.username}`);
 }
 
 function logout() {
@@ -315,8 +321,9 @@ async function changePassword() {
     return;
   }
 
-  setMessage("profile-message", "비밀번호가 변경되었습니다.", "#2563eb");
+  currentUser.password = newPassword;
   document.getElementById("new-password").value = "";
+  setMessage("profile-message", "비밀번호가 변경되었습니다.");
 }
 
 async function requestClassChange() {
@@ -342,7 +349,7 @@ async function requestClassChange() {
     return;
   }
 
-  setMessage("profile-message", "반 변경 요청이 완료되었습니다. 관리자 승인 후 반영됩니다.", "#2563eb");
+  setMessage("profile-message", "반 변경 요청이 완료되었습니다. 관리자 승인 후 반영됩니다.");
 }
 
 async function loadBooks() {
@@ -353,7 +360,7 @@ async function loadBooks() {
 
   if (error) {
     document.getElementById("book-list").innerHTML =
-      `<tr><td colspan="6">도서 목록을 불러오지 못했습니다.</td></tr>`;
+      `<tr><td colspan="6">도서 목록을 불러오지 못했습니다: ${error.message}</td></tr>`;
     return;
   }
 
