@@ -350,7 +350,27 @@ let currentPage = 1;
 let pageSize = 20;
 let totalBooks = 0;
 let currentKeyword = "";
+let logoutTimer = null;
+const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // 30분
 
+function resetAutoLogoutTimer() {
+  if (!currentUser) return;
+
+  clearTimeout(logoutTimer);
+
+  logoutTimer = setTimeout(() => {
+    alert("30분 동안 활동이 없어 자동 로그아웃되었습니다.");
+    logout();
+  }, AUTO_LOGOUT_TIME);
+}
+
+function startAutoLogout() {
+  ["click", "keydown", "mousemove", "touchstart"].forEach(eventName => {
+    document.addEventListener(eventName, resetAutoLogoutTimer);
+  });
+
+  resetAutoLogoutTimer();
+}
 const classMap = {
   "만1세": ["햇빛반","달빛반","별빛반","풀빛반","온빛반"],
   "만2세": ["예빛반","봄빛반","물빛반","꿈빛반"],
@@ -526,7 +546,7 @@ function afterLoginSuccess() {
   currentPage = 1;
   loadBooks();
 }
-
+startAutoLogout();
 function logout() {
   currentUser = null;
   localStorage.removeItem("libraryCurrentUser");
