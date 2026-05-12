@@ -24,7 +24,13 @@
     .pagination button.active { background:#e8f0fe; color:#1d4ed8; border-color:#bfdbfe; }
     .page-size-box { max-width:160px; margin-top:10px; }
     .print-option-box { margin-top:10px; max-width:320px; }
-
+.session-timer {
+  font-size:13px;
+  color:#6b7280;
+  margin-left:8px;
+  margin-right:4px;
+  white-space:nowrap;
+}
     .btn-basic { background:white; color:#111; }
     .btn-reserve { background:#e8f0fe; color:#1d4ed8; border-color:#bfdbfe; }
     .btn-cancel { background:#f3f4f6; color:#4b5563; border-color:#d1d5db; }
@@ -163,7 +169,9 @@
   <div class="top">
     <div>
       <strong id="user-info"></strong>
-      <button id="profile-btn" class="btn-basic">내 정보 변경</button>
+<span id="auto-logout-countdown" class="session-timer">자동 로그아웃 30:00</span>
+<button id="extend-session-btn" class="btn-basic">시간연장</button>
+<button id="profile-btn" class="btn-basic">내 정보 변경</button>
       <button id="my-books-btn" class="btn-basic">내 대여현황</button>
       <button id="admin-panel-btn" class="hidden btn-approve">관리자/담당자 페이지</button>
     </div>
@@ -351,12 +359,38 @@ let pageSize = 20;
 let totalBooks = 0;
 let currentKeyword = "";
 let logoutTimer = null;
-const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // 30분
+let countdownTimer = null;
+let remainingSeconds = 30 * 60;
+const AUTO_LOGOUT_TIME = 30 * 60 * 1000;
+
+function updateCountdownDisplay() {
+  const countdownEl = document.getElementById("auto-logout-countdown");
+  if (!countdownEl || !currentUser) return;
+
+  const minutes = Math.floor(remainingSeconds / 60);
+  const seconds = remainingSeconds % 60;
+
+  countdownEl.innerText =
+    `자동 로그아웃 ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
 
 function resetAutoLogoutTimer() {
   if (!currentUser) return;
 
   clearTimeout(logoutTimer);
+  clearInterval(countdownTimer);
+
+  remainingSeconds = 30 * 60;
+  updateCountdownDisplay();
+
+  countdownTimer = setInterval(() => {
+    remainingSeconds--;
+    updateCountdownDisplay();
+
+    if (remainingSeconds <= 0) {
+      clearInterval(countdownTimer);
+    }
+  }, 1000);
 
   logoutTimer = setTimeout(() => {
     alert("30분 동안 활동이 없어 자동 로그아웃되었습니다.");
@@ -365,11 +399,12 @@ function resetAutoLogoutTimer() {
 }
 
 function startAutoLogout() {
-  ["click", "keydown", "mousemove", "touchstart"].forEach(eventName => {
-    document.addEventListener(eventName, resetAutoLogoutTimer);
-  });
-
   resetAutoLogoutTimer();
+}
+
+function extendSession() {
+  resetAutoLogoutTimer();
+  alert("로그인 시간이 30분 연장되었습니다.");
 }
 const classMap = {
   "만1세": ["햇빛반","달빛반","별빛반","풀빛반","온빛반"],
@@ -541,6 +576,8 @@ function afterLoginSuccess() {
   } else {
     document.getElementById("admin-panel-btn").classList.add("hidden");
   }
+
+  startAutoLogout();
 
   showScreen("app-screen");
   currentPage = 1;
@@ -1496,6 +1533,7 @@ document.getElementById("signup-btn").addEventListener("click", signup);
 document.getElementById("find-id-submit-btn").addEventListener("click", findId);
 document.getElementById("login-btn").addEventListener("click", login);
 document.getElementById("logout-btn").addEventListener("click", logout);
+document.getElementById("extend-session-btn").addEventListener("click", extendSession);
 document.getElementById("profile-btn").addEventListener("click", openProfile);
 document.getElementById("my-books-btn").addEventListener("click", loadMyBooks);
 document.getElementById("my-books-back-btn").addEventListener("click", () => showScreen("app-screen"));
