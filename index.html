@@ -195,25 +195,49 @@
 <div id="admin-screen" class="box hidden">
   <h2>관리자/담당자 페이지</h2>
 
-  <h3>출력</h3>
-  <button id="print-all-month-btn" class="btn-basic">이번 달 전체 대여기록 출력</button>
+<h3>출력</h3>
 
-  <div class="print-option-box">
-    <select id="print-age">
-      <option value="">연령 선택</option>
-      <option value="만1세">만1세</option>
-      <option value="만2세">만2세</option>
-      <option value="만3세">만3세</option>
-      <option value="만4세">만4세</option>
-      <option value="만5세">만5세</option>
-    </select>
+<div class="print-option-box">
+  <select id="print-year">
+    <option value="2026">2026년</option>
+    <option value="2027">2027년</option>
+    <option value="2028">2028년</option>
+  </select>
 
-    <select id="print-class">
-      <option value="">반 선택</option>
-    </select>
+  <select id="print-month">
+    <option value="1">1월</option>
+    <option value="2">2월</option>
+    <option value="3">3월</option>
+    <option value="4">4월</option>
+    <option value="5">5월</option>
+    <option value="6">6월</option>
+    <option value="7">7월</option>
+    <option value="8">8월</option>
+    <option value="9">9월</option>
+    <option value="10">10월</option>
+    <option value="11">11월</option>
+    <option value="12">12월</option>
+  </select>
 
-    <button id="print-class-month-btn" class="btn-basic">선택 반 대여기록 출력</button>
-  </div>
+  <button id="print-all-month-btn" class="btn-basic">선택 월 전체 대여기록 출력</button>
+
+  <hr>
+
+  <select id="print-age">
+    <option value="">연령 선택</option>
+    <option value="만1세">만1세</option>
+    <option value="만2세">만2세</option>
+    <option value="만3세">만3세</option>
+    <option value="만4세">만4세</option>
+    <option value="만5세">만5세</option>
+  </select>
+
+  <select id="print-class">
+    <option value="">반 선택</option>
+  </select>
+
+  <button id="print-class-month-btn" class="btn-basic">선택 월·반 대여기록 출력</button>
+</div>
 
   <h3>대여예약 승인</h3>
   <table>
@@ -326,9 +350,13 @@ function formatDate(value) {
 }
 
 function getMonthRange() {
+  const yearSelect = document.getElementById("print-year");
+  const monthSelect = document.getElementById("print-month");
+
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+
+  const year = yearSelect ? Number(yearSelect.value) : now.getFullYear();
+  const month = monthSelect ? Number(monthSelect.value) - 1 : now.getMonth();
 
   return {
     year,
@@ -478,7 +506,22 @@ function logout() {
   document.getElementById("admin-panel-btn").classList.add("hidden");
   showScreen("login-screen");
 }
+function setDefaultPrintMonth() {
+  const now = new Date();
+  const yearSelect = document.getElementById("print-year");
+  const monthSelect = document.getElementById("print-month");
 
+  if (yearSelect) {
+    yearSelect.value = String(now.getFullYear());
+  }
+
+  if (monthSelect) {
+    monthSelect.value = String(now.getMonth() + 1);
+  }
+}
+
+setDefaultPrintMonth();
+  
 function restoreLogin() {
   const savedUser = localStorage.getItem("libraryCurrentUser");
   if (!savedUser) return;
