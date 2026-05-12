@@ -31,6 +31,13 @@
     .btn-approve { background:#ecfdf5; color:#047857; border-color:#bbf7d0; }
     .btn-danger { background:#fef2f2; color:#b91c1c; border-color:#fecaca; }
     .btn-wait { background:#f3f4f6; color:#6b7280; border-color:#d1d5db; cursor:default; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #print-area, #print-area * { visibility: visible; }
+      #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+      button, input, select { display: none !important; }
+    }
   </style>
 </head>
 
@@ -190,6 +197,8 @@
 <div id="admin-screen" class="box hidden">
   <h2>관리자/담당자 페이지</h2>
 
+  <button id="print-month-btn" class="btn-basic">이번 달 대여기록 출력</button>
+
   <h3>대여예약 승인</h3>
   <table>
     <thead>
@@ -197,7 +206,7 @@
         <th>관리번호</th>
         <th>도서명</th>
         <th>요청반</th>
-        <th>승인</th>
+        <th>처리</th>
       </tr>
     </thead>
     <tbody id="rental-approve-list"></tbody>
@@ -260,6 +269,8 @@
   <button id="admin-back-btn" class="btn-basic">돌아가기</button>
 </div>
 
+<div id="print-area" class="hidden"></div>
+
 <script>
 const supabaseUrl = "https://vohcugxfwxdvkbcpjcgl.supabase.co";
 const supabaseKey = "sb_publishable_Q0cXaglzBaz9Py2oct_NTQ_vMHsUeSQ";
@@ -283,6 +294,21 @@ function getRoleName(role) {
   if (role === "admin") return "관리자";
   if (role === "manager") return "도서담당자";
   return "선생님";
+}
+
+function getStatusName(status) {
+  if (status === "reserved") return "대여예약";
+  if (status === "borrowed") return "대여중";
+  if (status === "return_requested") return "반납요청";
+  if (status === "returned") return "반납완료";
+  if (status === "cancelled") return "예약취소";
+  return status || "-";
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  return date.toLocaleDateString("ko-KR");
 }
 
 function setMessage(id, text, color = "#2563eb") {
@@ -731,7 +757,7 @@ async function cancelReservation(bookId) {
 
   await supabaseClient
     .from("rental_records")
-    .update({ status: "cancelled" })
+    .delete()
     .eq("book_id", bookId)
     .eq("user_id", currentUser.id)
     .eq("status", "reserved");
@@ -868,7 +894,10 @@ async function loadRentalApproveList() {
         <td>${book["관리번호"] || ""}</td>
         <td>${book["도서명"] || ""}</td>
         <td>${book.current_class || "-"}</td>
-        <td><button class="btn-approve" onclick="approveRental('${book.id}')">대여승인</button></td>
+        <td>
+          <button class="btn-approve" onclick="approveRental('${book.id}')">대여승인</button>
+          <button class="btn-danger" onclick="rejectRental('${book.id}')">반려</button>
+        </td>
       </tr>
     `;
   });
@@ -890,6 +919,33 @@ async function approveRental(bookId) {
     .eq("book_id", bookId)
     .eq("status", "reserved");
 
+  loadRentalApproveList();
+  loadBooks();
+}
+
+async function rejectRental(bookId) {
+  const reason = prompt("반려 사유를 입력해주세요.");
+  if (!reason || !reason.trim()) {
+    alert("반려 사유를 입력해야 합니다.");
+    return;
+  }
+
+  await supabaseClient
+    .from("books")
+    .update({
+      status: "available",
+      current_class: null,
+      current_user_id: null
+    })
+    .eq("id", bookId);
+
+  await supabaseClient
+    .from("rental_records")
+    .delete()
+    .eq("book_id", bookId)
+    .eq("status", "reserved");
+
+  alert("대여예약이 반려되었습니다. 사유: " + reason);
   loadRentalApproveList();
   loadBooks();
 }
@@ -942,6 +998,78 @@ async function approveReturn(bookId) {
 
   loadReturnApproveList();
   loadBooks();
+}
+
+async function printMonthlyRecords() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  const startDate = new Date(year, month, 1).toISOString();
+  const endDate = new Date(year, month + 1, 1).toISOString();
+
+  const { data, error } = await supabaseClient
+    .from("rental_records")
+    .select(`
+      *,
+      books("관리번호","도서명")
+    `)
+    .gte("approved_at", startDate)
+    .lt("approved_at", endDate)
+    .in("status", ["borrowed", "return_requested", "returned"]);
+
+  if (error) {
+    alert("출력 데이터를 불러오지 못했습니다: " + error.message);
+    return;
+  }
+
+  const printArea = document.getElementById("print-area");
+  const monthText = `${year}년 ${month + 1}월`;
+
+  let rows = "";
+
+  if (!data || !data.length) {
+    rows = `<tr><td colspan="8">이번 달 대여기록이 없습니다.</td></tr>`;
+  } else {
+    data.forEach(record => {
+      rows += `
+        <tr>
+          <td>${record.class_name || ""}</td>
+          <td>${record.books?.["관리번호"] || ""}</td>
+          <td>${record.books?.["도서명"] || ""}</td>
+          <td>${formatDate(record.reserved_at)}</td>
+          <td>${formatDate(record.approved_at)}</td>
+          <td>${formatDate(record.return_requested_at)}</td>
+          <td>${formatDate(record.returned_at)}</td>
+          <td>${getStatusName(record.status)}</td>
+        </tr>
+      `;
+    });
+  }
+
+  printArea.innerHTML = `
+    <h2>탕정삼성어린이집 도서 대여·반납 기록</h2>
+    <h3>${monthText}</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>반</th>
+          <th>관리번호</th>
+          <th>도서명</th>
+          <th>예약일</th>
+          <th>대여승인일</th>
+          <th>반납요청일</th>
+          <th>반납완료일</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+
+  printArea.classList.remove("hidden");
+  window.print();
+  printArea.classList.add("hidden");
 }
 
 async function loadPendingUsers() {
@@ -1090,6 +1218,7 @@ document.getElementById("request-class-change-btn").addEventListener("click", re
 document.getElementById("request-manager-btn").addEventListener("click", requestManagerRole);
 document.getElementById("prev-page-btn").addEventListener("click", prevPage);
 document.getElementById("next-page-btn").addEventListener("click", nextPage);
+document.getElementById("print-month-btn").addEventListener("click", printMonthlyRecords);
 
 document.getElementById("page-size").addEventListener("change", (e) => {
   pageSize = Number(e.target.value);
