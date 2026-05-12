@@ -1,25 +1,23 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>탕정삼성어린이집 도서관리 시스템</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    body { font-family: sans-serif; padding: 20px; background:#fafafa; }
-    h1 { margin-bottom: 20px; }
+    body { font-family: sans-serif; padding:20px; background:#fafafa; }
+    h1 { margin-bottom:20px; }
     .box { background:white; padding:20px; border:1px solid #ddd; max-width:420px; margin-bottom:20px; }
-    input, select { padding:12px; width:100%; margin-bottom:10px; box-sizing:border-box; font-size:14px; }
-    button { padding:10px 14px; cursor:pointer; border:1px solid #ccc; background:white; margin:2px; }
+    input, select { width:100%; padding:12px; margin-bottom:10px; box-sizing:border-box; }
+    button { padding:10px 14px; margin:2px; cursor:pointer; }
     .hidden { display:none; }
     .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
     table { width:100%; border-collapse:collapse; background:white; table-layout:fixed; }
-    th, td { border:1px solid #ddd; padding:8px; font-size:14px; word-break:keep-all; vertical-align:middle; }
+    th, td { border:1px solid #ddd; padding:8px; font-size:14px; word-break:keep-all; }
     th { background:#f1f1f1; text-align:center; }
     .status, .btn-cell { text-align:center; }
-    .message { color:#333; font-size:14px; }
-    .notice { font-size:13px; color:#666; }
   </style>
 </head>
 
@@ -27,22 +25,24 @@
 
 <h1>탕정삼성어린이집 도서관리 시스템</h1>
 
+<!-- 로그인 -->
 <div id="login-screen" class="box">
   <h2>로그인</h2>
-  <input id="login-username" placeholder="아이디" />
-  <input id="login-password" type="password" placeholder="비밀번호" />
+  <input id="login-username" placeholder="아이디">
+  <input id="login-password" type="password" placeholder="비밀번호">
   <button id="login-btn">로그인</button>
   <button id="signup-open-btn">회원가입</button>
   <button id="find-id-btn">아이디 찾기</button>
-  <p class="notice">비밀번호 초기화는 관리자에게 문의해주세요.</p>
-  <p id="login-message" class="message"></p>
+  <p>비밀번호 초기화는 관리자에게 문의해주세요.</p>
+  <p id="login-message"></p>
 </div>
 
+<!-- 회원가입 -->
 <div id="signup-screen" class="box hidden">
   <h2>회원가입</h2>
-  <input id="signup-name" placeholder="이름" />
-  <input id="signup-username" placeholder="아이디" />
-  <input id="signup-password" type="password" placeholder="비밀번호" />
+  <input id="signup-name" placeholder="이름">
+  <input id="signup-username" placeholder="아이디">
+  <input id="signup-password" type="password" placeholder="비밀번호">
 
   <select id="signup-age">
     <option value="">연령 선택</option>
@@ -59,15 +59,20 @@
 
   <button id="signup-btn">가입 신청</button>
   <button id="login-open-btn">로그인으로 돌아가기</button>
-  <p id="signup-message" class="message"></p>
+  <p id="signup-message"></p>
 </div>
 
-<div id="find-id-screen" class="box hidden">
-  <h2>아이디 찾기</h2>
-  <input id="find-name" placeholder="이름" />
+<!-- 내 정보 변경 -->
+<div id="profile-screen" class="box hidden">
+  <h2>내 정보 변경</h2>
 
-  <select id="find-age">
-    <option value="">연령 선택</option>
+  <p><strong>이름:</strong> <span id="profile-name"></span></p>
+  <p><strong>현재 반:</strong> <span id="profile-current-class"></span></p>
+
+  <input id="new-password" type="password" placeholder="새 비밀번호">
+
+  <select id="change-age">
+    <option value="">변경 연령 선택</option>
     <option value="만1세">만1세</option>
     <option value="만2세">만2세</option>
     <option value="만3세">만3세</option>
@@ -75,22 +80,28 @@
     <option value="만5세">만5세</option>
   </select>
 
-  <select id="find-class">
-    <option value="">반 선택</option>
+  <select id="change-class">
+    <option value="">변경 반 선택</option>
   </select>
 
-  <button id="find-id-submit-btn">아이디 찾기</button>
-  <button id="find-id-back-btn">로그인으로 돌아가기</button>
-  <p id="find-id-message" class="message"></p>
+  <button id="change-password-btn">비밀번호 변경</button>
+  <button id="request-class-change-btn">반 변경 요청</button>
+  <button id="back-btn">돌아가기</button>
+
+  <p id="profile-message"></p>
 </div>
 
+<!-- 도서 시스템 -->
 <div id="app-screen" class="hidden">
   <div class="top">
-    <strong id="user-info"></strong>
+    <div>
+      <strong id="user-info"></strong>
+      <button id="profile-btn">내 정보 변경</button>
+    </div>
     <button id="logout-btn">로그아웃</button>
   </div>
 
-  <input id="search" placeholder="도서명 / 관리번호 / 분류명 검색" />
+  <input id="search" placeholder="도서명 / 관리번호 / 분류명 검색">
 
   <table>
     <thead>
@@ -108,256 +119,107 @@
 </div>
 
 <script>
-  const supabaseUrl = "https://vohcugxfwxdvkbcpjcgl.supabase.co";
-  const supabaseKey = "sb_publishable_Q0cXaglzBaz9Py2oct_NTQ_vMHsUeSQ";
-  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = "https://vohcugxfwxdvkbcpjcgl.supabase.co";
+const supabaseKey = "YOUR_KEY";
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-  let currentUser = null;
-  let allBooks = [];
+let currentUser = null;
+let allBooks = [];
 
-  const classMap = {
-    "만1세": ["햇빛반", "달빛반", "별빛반", "풀빛반", "온빛반"],
-    "만2세": ["예빛반", "봄빛반", "물빛반", "꿈빛반"],
-    "만3세": ["한빛반", "은빛반", "새빛반"],
-    "만4세": ["윤빛반", "꽃빛반"],
-    "만5세": ["들빛반", "솔빛반"]
-  };
+const classMap = {
+  "만1세": ["햇빛반","달빛반","별빛반","풀빛반","온빛반"],
+  "만2세": ["예빛반","봄빛반","물빛반","꿈빛반"],
+  "만3세": ["한빛반","은빛반","새빛반"],
+  "만4세": ["윤빛반","꽃빛반"],
+  "만5세": ["들빛반","솔빛반"]
+};
 
-  function showSignup() {
-    document.getElementById("login-screen").classList.add("hidden");
-    document.getElementById("signup-screen").classList.remove("hidden");
+function updateClassOptions(ageId, classId) {
+  const age = document.getElementById(ageId).value;
+  const classSelect = document.getElementById(classId);
+
+  classSelect.innerHTML = `<option value="">반 선택</option>`;
+
+  if (!classMap[age]) return;
+
+  classMap[age].forEach(cls => {
+    classSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
+  });
+}
+
+function showScreen(screenId) {
+  ["login-screen","signup-screen","profile-screen","app-screen"].forEach(id => {
+    document.getElementById(id).classList.add("hidden");
+  });
+  document.getElementById(screenId).classList.remove("hidden");
+}
+
+async function changePassword() {
+  const newPassword = document.getElementById("new-password").value.trim();
+
+  if (!newPassword) {
+    document.getElementById("profile-message").innerText = "새 비밀번호를 입력해주세요.";
+    return;
   }
 
-  function showLogin() {
-    document.getElementById("signup-screen").classList.add("hidden");
-    document.getElementById("find-id-screen").classList.add("hidden");
-    document.getElementById("login-screen").classList.remove("hidden");
+  const { error } = await supabaseClient
+    .from("users")
+    .update({ password: newPassword })
+    .eq("id", currentUser.id);
+
+  if (error) {
+    document.getElementById("profile-message").innerText = "비밀번호 변경 실패";
+    return;
   }
 
-  function showFindId() {
-    document.getElementById("login-screen").classList.add("hidden");
-    document.getElementById("find-id-screen").classList.remove("hidden");
+  document.getElementById("profile-message").innerText = "비밀번호가 변경되었습니다.";
+}
+
+async function requestClassChange() {
+  const requestedClass = document.getElementById("change-class").value;
+
+  if (!requestedClass) {
+    document.getElementById("profile-message").innerText = "변경할 반을 선택해주세요.";
+    return;
   }
 
-  function updateClassOptions(targetAgeId, targetClassId) {
-    const age = document.getElementById(targetAgeId).value;
-    const classSelect = document.getElementById(targetClassId);
-
-    classSelect.innerHTML = `<option value="">반 선택</option>`;
-
-    if (!age || !classMap[age]) return;
-
-    classMap[age].forEach(className => {
-      classSelect.innerHTML += `<option value="${className}">${className}</option>`;
-    });
-  }
-
-  async function signup() {
-    const name = document.getElementById("signup-name").value.trim();
-    const username = document.getElementById("signup-username").value.trim();
-    const password = document.getElementById("signup-password").value.trim();
-    const className = document.getElementById("signup-class").value;
-
-    if (!name || !username || !password || !className) {
-      document.getElementById("signup-message").innerText = "모든 항목을 입력해주세요.";
-      return;
-    }
-
-    const { data: existingUser } = await supabaseClient
-      .from("users")
-      .select("username")
-      .eq("username", username)
-      .maybeSingle();
-
-    if (existingUser) {
-      document.getElementById("signup-message").innerText = "이미 사용 중인 아이디입니다.";
-      return;
-    }
-
-    const { error } = await supabaseClient.from("users").insert([{
-      name,
-      username,
-      password,
-      class_name: className,
-      role: "teacher",
-      approval_status: "pending"
+  const { error } = await supabaseClient
+    .from("class_change_requests")
+    .insert([{
+      user_id: currentUser.id,
+      name: currentUser.name,
+      current_class: currentUser.class_name,
+      requested_class: requestedClass,
+      status: "pending"
     }]);
 
-    if (error) {
-      document.getElementById("signup-message").innerText = "가입 실패: " + error.message;
-      return;
-    }
-
-    document.getElementById("signup-message").innerText =
-      "가입 신청 완료! 관리자 승인 후 로그인할 수 있습니다.";
+  if (error) {
+    document.getElementById("profile-message").innerText = "반 변경 요청 실패";
+    return;
   }
 
-  async function findId() {
-    const name = document.getElementById("find-name").value.trim();
-    const className = document.getElementById("find-class").value;
+  document.getElementById("profile-message").innerText =
+    "반 변경 요청이 완료되었습니다. 관리자 승인 후 반영됩니다.";
+}
 
-    if (!name || !className) {
-      document.getElementById("find-id-message").innerText = "모든 항목을 입력해주세요.";
-      return;
-    }
+function openProfile() {
+  document.getElementById("profile-name").innerText = currentUser.name;
+  document.getElementById("profile-current-class").innerText = currentUser.class_name;
+  showScreen("profile-screen");
+}
 
-    const { data, error } = await supabaseClient
-      .from("users")
-      .select("username")
-      .eq("name", name)
-      .eq("class_name", className)
-      .maybeSingle();
+function backToApp() {
+  showScreen("app-screen");
+}
 
-    if (error || !data) {
-      document.getElementById("find-id-message").innerText = "일치하는 정보가 없습니다.";
-      return;
-    }
+document.getElementById("profile-btn").addEventListener("click", openProfile);
+document.getElementById("back-btn").addEventListener("click", backToApp);
+document.getElementById("change-password-btn").addEventListener("click", changePassword);
+document.getElementById("request-class-change-btn").addEventListener("click", requestClassChange);
 
-    document.getElementById("find-id-message").innerText = `아이디: ${data.username}`;
-  }
-
-  async function login() {
-    const username = document.getElementById("login-username").value.trim();
-    const password = document.getElementById("login-password").value.trim();
-
-    const { data, error } = await supabaseClient
-      .from("users")
-      .select("*")
-      .eq("username", username)
-      .eq("password", password)
-      .maybeSingle();
-
-    if (error || !data) {
-      document.getElementById("login-message").innerText = "아이디 또는 비밀번호가 맞지 않습니다.";
-      return;
-    }
-
-    if (data.approval_status !== "approved") {
-      document.getElementById("login-message").innerText = "관리자 승인 대기중입니다.";
-      return;
-    }
-
-    currentUser = data;
-
-    document.getElementById("login-screen").classList.add("hidden");
-    document.getElementById("app-screen").classList.remove("hidden");
-    document.getElementById("user-info").innerText =
-      `${currentUser.name} / ${currentUser.class_name}`;
-
-    loadBooks();
-  }
-
-  function logout() {
-    currentUser = null;
-    document.getElementById("app-screen").classList.add("hidden");
-    document.getElementById("login-screen").classList.remove("hidden");
-  }
-
-  async function loadBooks() {
-    const { data, error } = await supabaseClient
-      .from("books")
-      .select('"관리번호","분류명","도서명",status,current_class')
-      .limit(5000);
-
-    if (error) {
-      document.getElementById("book-list").innerHTML =
-        `<tr><td colspan="6">도서 목록을 불러오지 못했습니다.</td></tr>`;
-      return;
-    }
-
-    allBooks = data || [];
-    renderBooks(allBooks);
-  }
-
-  function renderBooks(books) {
-    const bookList = document.getElementById("book-list");
-    bookList.innerHTML = "";
-
-    if (!books.length) {
-      bookList.innerHTML = `<tr><td colspan="6">검색 결과가 없습니다.</td></tr>`;
-      return;
-    }
-
-    books.forEach(book => {
-      const statusText =
-        book.status === "available" || !book.status ? "대여가능" :
-        book.status === "reserved" ? "대여예약중" :
-        book.status === "borrowed" ? "대여중" :
-        book.status === "return_requested" ? "반납요청중" :
-        book.status;
-
-      const canReserve = statusText === "대여가능";
-
-      bookList.innerHTML += `
-        <tr>
-          <td>${book["관리번호"] || ""}</td>
-          <td>${book["분류명"] || ""}</td>
-          <td>${book["도서명"] || ""}</td>
-          <td class="status">${statusText}</td>
-          <td class="status">${book.current_class || "-"}</td>
-          <td class="btn-cell">
-            ${canReserve ? `<button onclick="reserveBook('${book["관리번호"]}')">대여예약</button>` : "-"}
-          </td>
-        </tr>
-      `;
-    });
-  }
-
-  async function reserveBook(serialNumber) {
-    if (!currentUser) return;
-
-    const { error } = await supabaseClient
-      .from("books")
-      .update({
-        status: "reserved",
-        current_class: currentUser.class_name,
-        current_user_id: currentUser.id
-      })
-      .eq("관리번호", serialNumber);
-
-    if (error) {
-      alert("대여예약 실패: " + error.message);
-      return;
-    }
-
-    alert("대여예약이 완료되었습니다.");
-    loadBooks();
-  }
-
-  document.getElementById("signup-open-btn").addEventListener("click", showSignup);
-  document.getElementById("login-open-btn").addEventListener("click", showLogin);
-  document.getElementById("find-id-btn").addEventListener("click", showFindId);
-  document.getElementById("find-id-back-btn").addEventListener("click", showLogin);
-
-  document.getElementById("signup-age").addEventListener("change", () => {
-    updateClassOptions("signup-age", "signup-class");
-  });
-
-  document.getElementById("find-age").addEventListener("change", () => {
-    updateClassOptions("find-age", "find-class");
-  });
-
-  document.getElementById("signup-btn").addEventListener("click", signup);
-  document.getElementById("find-id-submit-btn").addEventListener("click", findId);
-  document.getElementById("login-btn").addEventListener("click", login);
-  document.getElementById("logout-btn").addEventListener("click", logout);
-
-  document.getElementById("search").addEventListener("input", (e) => {
-    const keyword = e.target.value.trim();
-
-    if (!keyword) {
-      renderBooks(allBooks);
-      return;
-    }
-
-    const filtered = allBooks.filter(book =>
-      (book["도서명"] || "").includes(keyword) ||
-      (book["관리번호"] || "").includes(keyword) ||
-      (book["분류명"] || "").includes(keyword)
-    );
-
-    renderBooks(filtered);
-  });
+document.getElementById("change-age").addEventListener("change", () => {
+  updateClassOptions("change-age", "change-class");
+});
 </script>
 
 </body>
