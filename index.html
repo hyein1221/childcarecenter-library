@@ -32,6 +32,34 @@
     .btn-approve { background:#ecfdf5; color:#047857; border-color:#bbf7d0; }
     .btn-danger { background:#fef2f2; color:#b91c1c; border-color:#fecaca; }
     .btn-wait { background:#f3f4f6; color:#6b7280; border-color:#d1d5db; cursor:default; }
+    .print-panel {
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  padding:14px;
+  margin:10px 0 20px;
+}
+
+.print-row {
+  display:grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap:8px;
+  align-items:center;
+  margin-bottom:8px;
+}
+
+.print-row select {
+  margin-bottom:0;
+}
+
+.print-row button {
+  white-space:nowrap;
+}
+
+@media (max-width: 700px) {
+  .print-row {
+    grid-template-columns: 1fr;
+  }
+}
 
     @media print {
       body * { visibility: hidden; }
@@ -195,53 +223,50 @@
 <div id="admin-screen" class="box hidden">
   <h2>관리자/담당자 페이지</h2>
 
-<h3>출력</h3<h3>출력</h3>
+<h3>출력</h3>
 
-<div class="print-option-box">
-  <h4>1. 출력할 기간 선택</h4>
+<div class="print-panel">
+  <div class="print-row">
+    <select id="print-year">
+      <option value="2026">2026년</option>
+      <option value="2027">2027년</option>
+      <option value="2028">2028년</option>
+    </select>
 
-  <select id="print-year">
-    <option value="2026">2026년</option>
-    <option value="2027">2027년</option>
-    <option value="2028">2028년</option>
-  </select>
+    <select id="print-month">
+      <option value="1">1월</option>
+      <option value="2">2월</option>
+      <option value="3">3월</option>
+      <option value="4">4월</option>
+      <option value="5">5월</option>
+      <option value="6">6월</option>
+      <option value="7">7월</option>
+      <option value="8">8월</option>
+      <option value="9">9월</option>
+      <option value="10">10월</option>
+      <option value="11">11월</option>
+      <option value="12">12월</option>
+    </select>
 
-  <select id="print-month">
-    <option value="1">1월</option>
-    <option value="2">2월</option>
-    <option value="3">3월</option>
-    <option value="4">4월</option>
-    <option value="5">5월</option>
-    <option value="6">6월</option>
-    <option value="7">7월</option>
-    <option value="8">8월</option>
-    <option value="9">9월</option>
-    <option value="10">10월</option>
-    <option value="11">11월</option>
-    <option value="12">12월</option>
-  </select>
+    <button id="print-all-month-btn" class="btn-basic">전체 기록 출력</button>
+  </div>
 
-  <h4>2. 전체 기록 출력</h4>
-  <button id="print-all-month-btn" class="btn-basic">전체 기록 출력</button>
+  <div class="print-row">
+    <select id="print-age">
+      <option value="">연령 선택</option>
+      <option value="만1세">만1세</option>
+      <option value="만2세">만2세</option>
+      <option value="만3세">만3세</option>
+      <option value="만4세">만4세</option>
+      <option value="만5세">만5세</option>
+    </select>
 
-  <hr>
+    <select id="print-class">
+      <option value="">반 선택</option>
+    </select>
 
-  <h4>3. 반별 기록 출력</h4>
-
-  <select id="print-age">
-    <option value="">연령 선택</option>
-    <option value="만1세">만1세</option>
-    <option value="만2세">만2세</option>
-    <option value="만3세">만3세</option>
-    <option value="만4세">만4세</option>
-    <option value="만5세">만5세</option>
-  </select>
-
-  <select id="print-class">
-    <option value="">반 선택</option>
-  </select>
-
-  <button id="print-class-month-btn" class="btn-basic">선택한 반 기록 출력</button>
+    <button id="print-class-month-btn" class="btn-basic">선택한 반 기록 출력</button>
+  </div>
 </div>
 
   <h3>대여예약 승인</h3>
