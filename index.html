@@ -35,7 +35,7 @@
     @media print {
       body * { visibility: hidden; }
       #print-area, #print-area * { visibility: visible; }
-      #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+      #print-area { position: absolute; left: 0; top: 0; width: 100%; display:block !important; }
       button, input, select { display: none !important; }
     }
   </style>
@@ -264,6 +264,20 @@
       </thead>
       <tbody id="manager-request-list"></tbody>
     </table>
+
+    <h3>이번 달 대여기록 관리</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>반</th>
+          <th>관리번호</th>
+          <th>도서명</th>
+          <th>상태</th>
+          <th>삭제</th>
+        </tr>
+      </thead>
+      <tbody id="monthly-record-list"></tbody>
+    </table>
   </div>
 
   <button id="admin-back-btn" class="btn-basic">돌아가기</button>
@@ -301,7 +315,6 @@ function getStatusName(status) {
   if (status === "borrowed") return "대여중";
   if (status === "return_requested") return "반납요청";
   if (status === "returned") return "반납완료";
-  if (status === "cancelled") return "예약취소";
   return status || "-";
 }
 
@@ -309,6 +322,18 @@ function formatDate(value) {
   if (!value) return "-";
   const date = new Date(value);
   return date.toLocaleDateString("ko-KR");
+}
+
+function getMonthRange() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  return {
+    year,
+    month,
+    startDate: new Date(year, month, 1).toISOString(),
+    endDate: new Date(year, month + 1, 1).toISOString()
+  };
 }
 
 function setMessage(id, text, color = "#2563eb") {
@@ -356,11 +381,16 @@ async function signup() {
     return;
   }
 
-  const { data: existingUser } = await supabaseClient
+  const { data: existingUser, error: checkError } = await supabaseClient
     .from("users")
     .select("username")
     .eq("username", username)
     .maybeSingle();
+
+  if (checkError) {
+    setMessage("signup-message", "아이디 확인 중 오류가 발생했습니다: " + checkError.message, "red");
+    return;
+  }
 
   if (existingUser) {
     setMessage("signup-message", "이미 사용 중인 아이디입니다.", "red");
@@ -454,9 +484,14 @@ function logout() {
 function restoreLogin() {
   const savedUser = localStorage.getItem("libraryCurrentUser");
 
-  if (savedUser) {
+  if (!savedUser) return;
+
+  try {
     currentUser = JSON.parse(savedUser);
     afterLoginSuccess();
+  } catch (error) {
+    localStorage.removeItem("libraryCurrentUser");
+    showScreen("login-screen");
   }
 }
 
@@ -635,7 +670,6 @@ function renderBooks(books) {
 
     let rentalButton = "-";
     let returnButton = "-";
-
     const isMine = book.current_user_id === currentUser.id;
 
     if (statusText === "대여가능") {
@@ -771,9 +805,7 @@ async function requestReturn(bookId) {
 
   const { error } = await supabaseClient
     .from("books")
-    .update({
-      status: "return_requested"
-    })
+    .update({ status: "return_requested" })
     .eq("id", bookId)
     .eq("current_user_id", currentUser.id);
 
@@ -866,6 +898,7 @@ async function openAdminPanel() {
     loadPendingUsers();
     loadClassChangeRequests();
     loadManagerRequests();
+    loadMonthlyRecordList();
   } else {
     document.getElementById("admin-only-section").classList.add("hidden");
   }
@@ -1000,13 +1033,8 @@ async function approveReturn(bookId) {
   loadBooks();
 }
 
-async function printMonthlyRecords() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-
-  const startDate = new Date(year, month, 1).toISOString();
-  const endDate = new Date(year, month + 1, 1).toISOString();
+async function getMonthlyRecords() {
+  const { startDate, endDate } = getMonthRange();
 
   const { data: records, error } = await supabaseClient
     .from("rental_records")
@@ -1016,30 +1044,86 @@ async function printMonthlyRecords() {
     .in("status", ["borrowed", "return_requested", "returned"]);
 
   if (error) {
-    alert("출력 데이터를 불러오지 못했습니다: " + error.message);
+    alert("기록을 불러오지 못했습니다: " + error.message);
+    return [];
+  }
+
+  const result = [];
+
+  for (const record of records || []) {
+    const { data: book } = await supabaseClient
+      .from("books")
+      .select('"관리번호","도서명"')
+      .eq("id", record.book_id)
+      .maybeSingle();
+
+    result.push({
+      ...record,
+      bookNumber: book?.["관리번호"] || "",
+      bookTitle: book?.["도서명"] || ""
+    });
+  }
+
+  return result;
+}
+
+async function loadMonthlyRecordList() {
+  const records = await getMonthlyRecords();
+  const list = document.getElementById("monthly-record-list");
+  list.innerHTML = "";
+
+  if (!records.length) {
+    list.innerHTML = `<tr><td colspan="5">이번 달 대여기록이 없습니다.</td></tr>`;
     return;
   }
 
+  records.forEach(record => {
+    list.innerHTML += `
+      <tr>
+        <td>${record.class_name || ""}</td>
+        <td>${record.bookNumber}</td>
+        <td>${record.bookTitle}</td>
+        <td>${getStatusName(record.status)}</td>
+        <td><button class="btn-danger" onclick="deleteRentalRecord('${record.id}')">기록삭제</button></td>
+      </tr>
+    `;
+  });
+}
+
+async function deleteRentalRecord(recordId) {
+  if (!confirm("이 대여기록을 삭제하시겠습니까? 도서 상태는 변경되지 않습니다.")) return;
+
+  const { error } = await supabaseClient
+    .from("rental_records")
+    .delete()
+    .eq("id", recordId);
+
+  if (error) {
+    alert("기록삭제 실패: " + error.message);
+    return;
+  }
+
+  alert("기록이 삭제되었습니다.");
+  loadMonthlyRecordList();
+}
+
+async function printMonthlyRecords() {
+  const { year, month } = getMonthRange();
+  const records = await getMonthlyRecords();
   const printArea = document.getElementById("print-area");
   const monthText = `${year}년 ${month + 1}월`;
 
   let rows = "";
 
-  if (!records || !records.length) {
+  if (!records.length) {
     rows = `<tr><td colspan="8">이번 달 대여기록이 없습니다.</td></tr>`;
   } else {
-    for (const record of records) {
-      const { data: book } = await supabaseClient
-        .from("books")
-        .select('"관리번호","도서명"')
-        .eq("id", record.book_id)
-        .maybeSingle();
-
+    records.forEach(record => {
       rows += `
         <tr>
           <td>${record.class_name || ""}</td>
-          <td>${book?.["관리번호"] || ""}</td>
-          <td>${book?.["도서명"] || ""}</td>
+          <td>${record.bookNumber}</td>
+          <td>${record.bookTitle}</td>
           <td>${formatDate(record.reserved_at)}</td>
           <td>${formatDate(record.approved_at)}</td>
           <td>${formatDate(record.return_requested_at)}</td>
@@ -1047,7 +1131,7 @@ async function printMonthlyRecords() {
           <td>${getStatusName(record.status)}</td>
         </tr>
       `;
-    }
+    });
   }
 
   printArea.innerHTML = `
@@ -1070,17 +1154,18 @@ async function printMonthlyRecords() {
     </table>
   `;
 
- printArea.classList.remove("hidden");
-printArea.style.display = "block";
-
-setTimeout(() => {
-  window.print();
+  printArea.classList.remove("hidden");
+  printArea.style.display = "block";
 
   setTimeout(() => {
-    printArea.classList.add("hidden");
-    printArea.style.display = "none";
-  }, 1500);
-}, 500);
+    window.print();
+
+    setTimeout(() => {
+      printArea.classList.add("hidden");
+      printArea.style.display = "none";
+    }, 1500);
+  }, 500);
+}
 
 async function loadPendingUsers() {
   const { data } = await supabaseClient
