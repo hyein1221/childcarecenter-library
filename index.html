@@ -1070,10 +1070,17 @@ async function printMonthlyRecords() {
     </table>
   `;
 
-  printArea.classList.remove("hidden");
+ printArea.classList.remove("hidden");
+printArea.style.display = "block";
+
+setTimeout(() => {
   window.print();
-  printArea.classList.add("hidden");
-}
+
+  setTimeout(() => {
+    printArea.classList.add("hidden");
+    printArea.style.display = "none";
+  }, 1500);
+}, 500);
 
 async function loadPendingUsers() {
   const { data } = await supabaseClient
