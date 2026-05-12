@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>탕정삼성어린이집 도서관리 시스템</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  
   <style>
     body { font-family: sans-serif; padding:20px; background:#fafafa; }
     h1 { margin-bottom:20px; }
@@ -38,7 +39,26 @@
       gap:6px;
       white-space:nowrap;
     }
+    .title-row {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:20px;
+}
 
+.logo {
+  width:52px;
+  height:auto;
+  object-fit:contain;
+}
+
+.login-contact {
+  text-align:center;
+  font-size:14px;
+  color:#555;
+  margin-top:-10px;
+  max-width:1000px;
+}
     .session-timer {
       font-size:13px;
       color:#6b7280;
@@ -99,8 +119,11 @@
 
 <body>
 
-<h1>탕정삼성어린이집 도서관리 시스템</h1>
-
+<div class="title-row">
+  <img src="logo.png" class="logo" alt="탕정삼성어린이집 로고">
+  <h1>탕정삼성어린이집 도서관리 시스템</h1>
+</div>
+  
 <div id="login-screen" class="box">
   <h2>로그인</h2>
   <input id="login-username" placeholder="아이디" />
@@ -111,6 +134,10 @@
   <p class="notice">비밀번호 초기화는 관리자에게 문의해주세요.</p>
   <p id="login-message" class="message"></p>
 </div>
+
+  </div>
+
+<p id="login-contact" class="login-contact">기타 문의사항: 김혜인 교사</p>
 
 <div id="signup-screen" class="box hidden">
   <h2>회원가입</h2>
@@ -372,7 +399,10 @@
 <div class="book-manage-box">
   <input id="book-excel-file" type="file" accept=".xlsx,.xls" />
   <button id="upload-book-excel-btn" class="btn-approve">엑셀로 도서 등록</button>
-
+<button id="excel-upload-btn" class="btn-approve">엑셀로 도서등록</button>
+<input type="file" id="excel-upload" accept=".xlsx,.xls,.csv" hidden
+       onclick="this.value=null;"
+       capture="none" />
   <p class="notice">
     엑셀에 관리번호, 분류명, 도서명 열이 포함되어 있어야 합니다.
   </p>
@@ -532,8 +562,13 @@ function showScreen(screenId) {
   ].forEach(id => document.getElementById(id).classList.add("hidden"));
 
   document.getElementById(screenId).classList.remove("hidden");
-}
 
+  const contact = document.getElementById("login-contact");
+  if (contact) {
+    contact.style.display = screenId === "login-screen" ? "block" : "none";
+  }
+}
+  
 function updateClassOptions(ageId, classId) {
   const age = document.getElementById(ageId).value;
   const classSelect = document.getElementById(classId);
@@ -661,7 +696,72 @@ function logout() {
 
   showScreen("login-screen");
 }
+async function handleExcelUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
+  const reader = new FileReader();
+
+  reader.onload = async function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+    if (!jsonData.length) {
+      alert("엑셀 데이터가 없습니다.");
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const row of jsonData) {
+      const bookNumber = row["관리번호"]?.toString().trim();
+      const category = row["분류명"]?.toString().trim();
+      const title = row["도서명"]?.toString().trim();
+
+      if (!bookNumber || !category || !title) {
+        failCount++;
+        continue;
+      }
+
+      const { data: existingBook } = await supabaseClient
+        .from("books")
+        .select("id")
+        .eq("관리번호", bookNumber)
+        .maybeSingle();
+
+      if (existingBook) {
+        failCount++;
+        continue;
+      }
+
+      const { error } = await supabaseClient
+        .from("books")
+        .insert([{
+          "관리번호": bookNumber,
+          "분류명": category,
+          "도서명": title,
+          status: "available",
+          current_class: null,
+          current_user_id: null
+        }]);
+
+      if (error) failCount++;
+      else successCount++;
+    }
+
+    alert(`엑셀 등록 완료\n성공: ${successCount}권\n실패/중복: ${failCount}권`);
+
+    loadBooks();
+    searchManageBooks();
+  };
+
+  reader.readAsArrayBuffer(file);
+}
 function restoreLogin() {
   const savedUser = localStorage.getItem("libraryCurrentUser");
   if (!savedUser) return;
@@ -1733,7 +1833,11 @@ document.getElementById("signup-age").addEventListener("change", () => updateCla
 document.getElementById("find-age").addEventListener("change", () => updateClassOptions("find-age", "find-class"));
 document.getElementById("change-age").addEventListener("change", () => updateClassOptions("change-age", "change-class"));
 document.getElementById("print-age").addEventListener("change", () => updateClassOptions("print-age", "print-class"));
+document.getElementById("excel-upload-btn").addEventListener("click", () => {
+  document.getElementById("excel-upload").click();
+});
 
+document.getElementById("excel-upload").addEventListener("change", handleExcelUpload);
 document.getElementById("signup-btn").addEventListener("click", signup);
 document.getElementById("find-id-submit-btn").addEventListener("click", findId);
 document.getElementById("login-btn").addEventListener("click", login);
