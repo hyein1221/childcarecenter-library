@@ -196,7 +196,23 @@
 </div>
 
   </div>  <h3>대여예약 승인</h3>
-  <table>
+<div class="panel">
+  <div class="grid-row">
+    <select id="rental-filter-age">
+      <option value="">연령 선택</option>
+      <option value="만1세">만1세</option>
+      <option value="만2세">만2세</option>
+      <option value="만3세">만3세</option>
+      <option value="만4세">만4세</option>
+      <option value="만5세">만5세</option>
+    </select>
+    <select id="rental-filter-class">
+      <option value="">반 선택</option>
+    </select>
+    <button id="load-rental-filter-btn" class="btn-basic">조회</button>
+  </div>
+</div>
+<table>
     <thead>
       <tr>
         <th>관리번호</th>
@@ -208,7 +224,23 @@
     </thead>
     <tbody id="rental-approve-list"></tbody>
   </table>  <h3>반납요청 승인</h3>
-  <table>
+<div class="panel">
+  <div class="grid-row">
+    <select id="return-filter-age">
+      <option value="">연령 선택</option>
+      <option value="만1세">만1세</option>
+      <option value="만2세">만2세</option>
+      <option value="만3세">만3세</option>
+      <option value="만4세">만4세</option>
+      <option value="만5세">만5세</option>
+    </select>
+    <select id="return-filter-class">
+      <option value="">반 선택</option>
+    </select>
+    <button id="load-return-filter-btn" class="btn-basic">조회</button>
+  </div>
+</div>
+<table>
     <thead>
       <tr>
         <th>관리번호</th>
@@ -1114,9 +1146,16 @@ async function requestReturnAndReloadMyBooks(bookId) {
 async function openManagerPage() {
   if (!currentUser || (currentUser.role !== "manager" && currentUser.role !== "admin")) return;
   showScreen("manager-screen");
-  loadRentalApproveList();
-  loadReturnApproveList();
+  resetManagerApproveLists();
   loadMonthlyRecordList();
+}
+
+function resetManagerApproveLists() {
+  const rentalList = document.getElementById("rental-approve-list");
+  const returnList = document.getElementById("return-approve-list");
+
+  rentalList.innerHTML = `<tr><td colspan="5">연령 또는 반을 선택한 뒤 조회 버튼을 눌러주세요.</td></tr>`;
+  returnList.innerHTML = `<tr><td colspan="5">연령 또는 반을 선택한 뒤 조회 버튼을 눌러주세요.</td></tr>`;
 }
 
 async function openAdminPage() {
@@ -1134,10 +1173,44 @@ async function openBookManagePage() {
   showScreen("book-manage-screen");
 }
 
-function applyManagerClassFilter(query) {
-  const selectedClass = document.getElementById("manager-filter-class")?.value;
-  if (selectedClass) return query.eq("current_class", selectedClass);
+function applyManagerClassFilter(query, type = "rental") {
+  const ageId = type === "rental" ? "rental-filter-age" : "return-filter-age";
+  const classId = type === "rental" ? "rental-filter-class" : "return-filter-class";
+
+  const selectedAge = document.getElementById(ageId)?.value;
+  const selectedClass = document.getElementById(classId)?.value;
+
+  if (selectedClass) {
+    return query.eq("current_class", selectedClass);
+  }
+
+  if (selectedAge && classMap[selectedAge]) {
+    return query.in("current_class", classMap[selectedAge]);
+  }
+
   return query;
+}
+
+function getClassOrderValue(className) {
+  const ageOrder = ["만1세", "만2세", "만3세", "만4세", "만5세"];
+
+  for (let ageIndex = 0; ageIndex < ageOrder.length; ageIndex++) {
+    const age = ageOrder[ageIndex];
+    const classIndex = classMap[age].indexOf(className);
+    if (classIndex !== -1) {
+      return ageIndex * 100 + classIndex;
+    }
+  }
+
+  return 9999;
+}
+
+function sortByAgeAndClass(data) {
+  return [...(data || [])].sort((a, b) => {
+    const classCompare = getClassOrderValue(a.current_class) - getClassOrderValue(b.current_class);
+    if (classCompare !== 0) return classCompare;
+    return (a["관리번호"] || "").localeCompare(b["관리번호"] || "", "ko");
+  });
 }
 
 async function loadRentalApproveList() {
@@ -1147,18 +1220,19 @@ async function loadRentalApproveList() {
     .eq("status", "reserved")
     .or("is_deleted.is.false,is_deleted.is.null");
 
-  query = applyManagerClassFilter(query);
+  query = applyManagerClassFilter(query, "rental");
 
   const { data } = await query;
+  const sortedData = sortByAgeAndClass(data);
   const list = document.getElementById("rental-approve-list");
   list.innerHTML = "";
 
-  if (!data || !data.length) {
-    list.innerHTML = `<tr><td colspan="5">대여예약 요청이 없습니다.</td></tr>`;
+  if (!sortedData || !sortedData.length) {
+    list.innerHTML = `<tr><td colspan="5">선택한 연령/반의 대여예약 요청이 없습니다.</td></tr>`;
     return;
   }
 
-  for (const book of data) {
+  for (const book of sortedData) {
     const borrowerName = await getUserNameById(book.current_user_id);
     list.innerHTML += `
       <tr>
@@ -1228,18 +1302,21 @@ async function loadReturnApproveList() {
     .eq("status", "return_requested")
     .or("is_deleted.is.false,is_deleted.is.null");
 
-  query = applyManagerClassFilter(query);
+  query = applyManagerClassFilter(query, "rental");
+
+  query = applyManagerClassFilter(query, "return");
 
   const { data } = await query;
+  const sortedData = sortByAgeAndClass(data);
   const list = document.getElementById("return-approve-list");
   list.innerHTML = "";
 
-  if (!data || !data.length) {
-    list.innerHTML = `<tr><td colspan="5">반납요청이 없습니다.</td></tr>`;
+  if (!sortedData || !sortedData.length) {
+    list.innerHTML = `<tr><td colspan="5">선택한 연령/반의 반납요청이 없습니다.</td></tr>`;
     return;
   }
 
-  for (const book of data) {
+  for (const book of sortedData) {
     const returnUserName = await getUserNameById(book.current_user_id);
     list.innerHTML += `
       <tr>
@@ -1943,6 +2020,8 @@ document.getElementById("signup-age").addEventListener("change", () => updateCla
 document.getElementById("find-age").addEventListener("change", () => updateClassOptions("find-age", "find-class"));
 document.getElementById("change-age").addEventListener("change", () => updateClassOptions("change-age", "change-class"));
 document.getElementById("print-age").addEventListener("change", () => updateClassOptions("print-age", "print-class"));
+document.getElementById("rental-filter-age").addEventListener("change", () => updateClassOptions("rental-filter-age", "rental-filter-class"));
+document.getElementById("return-filter-age").addEventListener("change", () => updateClassOptions("return-filter-age", "return-filter-class"));
 document.getElementById("manager-filter-age").addEventListener("change", () => updateClassOptions("manager-filter-age", "manager-filter-class", true));
 
 document.getElementById("signup-btn").addEventListener("click", signup);
@@ -1979,6 +2058,8 @@ document.getElementById("next-page-btn").addEventListener("click", nextPage);
 document.getElementById("print-all-month-btn").addEventListener("click", () => printMonthlyRecords());
 document.getElementById("print-class-month-btn").addEventListener("click", printClassMonthlyRecords);
 document.getElementById("load-record-month-btn").addEventListener("click", loadMonthlyRecordList);
+document.getElementById("load-rental-filter-btn").addEventListener("click", loadRentalApproveList);
+document.getElementById("load-return-filter-btn").addEventListener("click", loadReturnApproveList);
 
 document.getElementById("excel-upload-btn").addEventListener("click", () => document.getElementById("excel-upload").click());
 document.getElementById("excel-upload").addEventListener("change", handleExcelUpload);
