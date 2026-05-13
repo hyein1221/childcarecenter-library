@@ -178,7 +178,23 @@
   </table><button id="my-books-back-btn" class="btn-basic">돌아가기</button>
 
 </div><div id="manager-screen" class="box hidden">
-  <h2>도서담당자 페이지</h2>  
+  <h2>도서담당자 페이지</h2>  <h3>승인 목록 필터</h3>
+  <div class="panel">
+    <div class="grid-row">
+      <select id="manager-filter-age">
+        <option value="">연령 전체</option>
+        <option value="만1세">만1세</option>
+        <option value="만2세">만2세</option>
+        <option value="만3세">만3세</option>
+        <option value="만4세">만4세</option>
+        <option value="만5세">만5세</option>
+      </select><select id="manager-filter-class">
+    <option value="">반 전체</option>
+  </select>
+
+  <button id="manager-filter-btn" class="btn-basic">조회</button>
+</div>
+
   </div>  <h3>대여예약 승인</h3>
 <div class="panel">
   <div class="grid-row">
