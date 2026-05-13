@@ -1,14 +1,8 @@
-<!DOCTYPE html>
-<html lang="ko">
+<!DOCTYPE html><html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>탕정삼성어린이집 도서관리 시스템</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-  <style>
+  <title>탕정삼성어린이집 도서관리 시스템</title>  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>  <style>
     body { font-family: sans-serif; padding:20px; background:#fafafa; }
     h1 { margin:0; }
     h2, h3 { margin-top:20px; }
@@ -22,6 +16,7 @@
     .status, .btn-cell { text-align:center; }
     .message { font-size:14px; margin-top:10px; color:#2563eb; white-space:pre-line; }
     .notice { font-size:13px; color:#666; line-height:1.5; }
+    .danger-text { color:#b91c1c; }
     .title-row { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
     .logo { width:52px; height:auto; object-fit:contain; }
     .login-contact { text-align:center; font-size:14px; color:#555; max-width:1000px; margin-top:-10px; }
@@ -57,17 +52,10 @@
       #print-area { position:absolute; left:0; top:0; width:100%; display:block !important; }
       button, input, select { display:none !important; }
     }
-  </style>
-</head>
-
-<body>
-
-<div class="title-row">
+  </style></head><body><div class="title-row">
   <img src="logo.png" class="logo" alt="탕정삼성어린이집 로고">
   <h1>탕정삼성어린이집 도서관리 시스템</h1>
-</div>
-
-<div id="login-screen" class="box">
+</div><div id="login-screen" class="box">
   <h2>로그인</h2>
   <input id="login-username" placeholder="아이디" />
   <input id="login-password" type="password" placeholder="비밀번호" />
@@ -76,86 +64,53 @@
   <button id="find-id-btn" class="btn-basic">아이디 찾기</button>
   <p class="notice">비밀번호 초기화는 관리자에게 문의해주세요.</p>
   <p id="login-message" class="message"></p>
-</div>
-
-<p id="login-contact" class="login-contact">기타 문의사항: 김혜인 교사</p>
-
-<div id="signup-screen" class="box hidden">
+</div><p id="login-contact" class="login-contact">기타 문의사항: 김혜인 교사</p><div id="signup-screen" class="box hidden">
   <h2>회원가입</h2>
   <input id="signup-name" placeholder="이름" />
   <input id="signup-username" placeholder="아이디" />
-  <input id="signup-password" type="password" placeholder="비밀번호" />
-
-  <select id="signup-age">
+  <input id="signup-password" type="password" placeholder="비밀번호" />  <select id="signup-age">
     <option value="">연령 선택</option>
     <option value="만1세">만1세</option>
     <option value="만2세">만2세</option>
     <option value="만3세">만3세</option>
     <option value="만4세">만4세</option>
     <option value="만5세">만5세</option>
-  </select>
-
-  <select id="signup-class">
+  </select>  <select id="signup-class">
     <option value="">반 선택</option>
-  </select>
+  </select><button id="signup-btn" class="btn-reserve">가입 신청</button> <button id="login-open-btn" class="btn-basic">로그인으로 돌아가기</button>
 
-  <button id="signup-btn" class="btn-reserve">가입 신청</button>
-  <button id="login-open-btn" class="btn-basic">로그인으로 돌아가기</button>
   <p id="signup-message" class="message"></p>
-</div>
-
-<div id="find-id-screen" class="box hidden">
+</div><div id="find-id-screen" class="box hidden">
   <h2>아이디 찾기</h2>
-  <input id="find-name" placeholder="이름" />
-
-  <select id="find-age">
+  <input id="find-name" placeholder="이름" />  <select id="find-age">
     <option value="">연령 선택</option>
     <option value="만1세">만1세</option>
     <option value="만2세">만2세</option>
     <option value="만3세">만3세</option>
     <option value="만4세">만4세</option>
     <option value="만5세">만5세</option>
-  </select>
-
-  <select id="find-class">
+  </select>  <select id="find-class">
     <option value="">반 선택</option>
-  </select>
+  </select><button id="find-id-submit-btn" class="btn-reserve">아이디 찾기</button> <button id="find-id-back-btn" class="btn-basic">로그인으로 돌아가기</button>
 
-  <button id="find-id-submit-btn" class="btn-reserve">아이디 찾기</button>
-  <button id="find-id-back-btn" class="btn-basic">로그인으로 돌아가기</button>
   <p id="find-id-message" class="message"></p>
-</div>
-
-<div id="profile-screen" class="box hidden">
+</div><div id="profile-screen" class="box hidden">
   <h2>내 정보 변경</h2>
   <p><strong>이름:</strong> <span id="profile-name"></span></p>
   <p><strong>현재 반:</strong> <span id="profile-current-class"></span></p>
-  <p><strong>현재 권한:</strong> <span id="profile-role"></span></p>
-
-  <input id="new-password" type="password" placeholder="새 비밀번호" />
-
-  <select id="change-age">
+  <p><strong>현재 권한:</strong> <span id="profile-role"></span></p>  <input id="new-password" type="password" placeholder="새 비밀번호" />  <select id="change-age">
     <option value="">변경 연령 선택</option>
     <option value="만1세">만1세</option>
     <option value="만2세">만2세</option>
     <option value="만3세">만3세</option>
     <option value="만4세">만4세</option>
     <option value="만5세">만5세</option>
-  </select>
-
-  <select id="change-class">
+  </select>  <select id="change-class">
     <option value="">변경 반 선택</option>
-  </select>
-
-  <button id="change-password-btn" class="btn-reserve">비밀번호 변경</button>
-  <button id="request-class-change-btn" class="btn-return">반 변경 요청</button>
-  <button id="request-manager-btn" class="btn-approve">도서담당자 권한 요청</button>
-  <button id="profile-back-btn" class="btn-basic">돌아가기</button>
+  </select><button id="change-password-btn" class="btn-reserve">비밀번호 변경</button> <button id="request-class-change-btn" class="btn-return">반 변경 요청</button> <button id="request-manager-btn" class="btn-approve">도서담당자 권한 요청</button> <button id="profile-back-btn" class="btn-basic">돌아가기</button>
 
   <p id="profile-message" class="message"></p>
-</div>
-
-<div id="app-screen" class="hidden">
+</div><div id="app-screen" class="hidden">
   <div class="top">
     <div>
       <strong id="user-info"></strong>
@@ -164,26 +119,19 @@
       <button id="manager-page-btn" class="hidden btn-approve">도서담당자 페이지</button>
       <button id="admin-page-btn" class="hidden btn-approve">관리자 페이지</button>
       <button id="book-manage-page-btn" class="hidden btn-reserve">도서관리</button>
-    </div>
+    </div><div class="session-box">
+  <span id="auto-logout-countdown" class="session-timer">자동 로그아웃 30:00</span>
+  <button id="extend-session-btn" class="btn-basic">시간연장</button>
+  <button id="logout-btn" class="btn-danger">로그아웃</button>
+</div>
 
-    <div class="session-box">
-      <span id="auto-logout-countdown" class="session-timer">자동 로그아웃 30:00</span>
-      <button id="extend-session-btn" class="btn-basic">시간연장</button>
-      <button id="logout-btn" class="btn-danger">로그아웃</button>
-    </div>
-  </div>
-
-  <input id="search" placeholder="도서명 / 관리번호 / 분류명 검색" />
-
-  <div class="page-size-box">
+  </div>  <input id="search" placeholder="도서명 / 관리번호 / 분류명 검색" />  <div class="page-size-box">
     <select id="page-size">
       <option value="20">20개씩 보기</option>
       <option value="50">50개씩 보기</option>
       <option value="100">100개씩 보기</option>
     </select>
-  </div>
-
-  <table>
+  </div>  <table>
     <thead>
       <tr>
         <th style="width:17%">관리번호</th>
@@ -196,33 +144,26 @@
       </tr>
     </thead>
     <tbody id="book-list"></tbody>
-  </table>
-
-  <div class="pagination">
+  </table>  <div class="pagination">
     <span id="pagination-info"></span>
     <button id="prev-page-btn" class="btn-basic">이전</button>
     <span id="page-buttons"></span>
     <button id="next-page-btn" class="btn-basic">다음</button>
   </div>
-</div>
-
-<div id="my-books-screen" class="box hidden">
-  <h2>내 대여현황</h2>
-
-  <table>
+</div><div id="my-books-screen" class="box hidden">
+  <h2>내 대여현황</h2>  <p class="notice">※ 같은 반 선생님이 대여한 도서도 함께 표시되며, 같은 반 선생님이면 반납요청을 할 수 있습니다.</p>  <table>
     <thead>
       <tr>
         <th>관리번호</th>
         <th>도서명</th>
         <th>상태</th>
+        <th>사용반</th>
         <th>대여</th>
         <th>반납</th>
       </tr>
     </thead>
     <tbody id="my-books-list"></tbody>
-  </table>
-
-  <h3>반려 사유 확인</h3>
+  </table>  <h3>반려 사유 확인</h3>
   <table>
     <thead>
       <tr>
@@ -234,15 +175,27 @@
       </tr>
     </thead>
     <tbody id="my-rejection-list"></tbody>
-  </table>
+  </table><button id="my-books-back-btn" class="btn-basic">돌아가기</button>
 
-  <button id="my-books-back-btn" class="btn-basic">돌아가기</button>
+</div><div id="manager-screen" class="box hidden">
+  <h2>도서담당자 페이지</h2>  <h3>승인 목록 필터</h3>
+  <div class="panel">
+    <div class="grid-row">
+      <select id="manager-filter-age">
+        <option value="">연령 전체</option>
+        <option value="만1세">만1세</option>
+        <option value="만2세">만2세</option>
+        <option value="만3세">만3세</option>
+        <option value="만4세">만4세</option>
+        <option value="만5세">만5세</option>
+      </select><select id="manager-filter-class">
+    <option value="">반 전체</option>
+  </select>
+
+  <button id="manager-filter-btn" class="btn-basic">조회</button>
 </div>
 
-<div id="manager-screen" class="box hidden">
-  <h2>도서담당자 페이지</h2>
-
-  <h3>대여예약 승인</h3>
+  </div>  <h3>대여예약 승인</h3>
   <table>
     <thead>
       <tr>
@@ -254,9 +207,7 @@
       </tr>
     </thead>
     <tbody id="rental-approve-list"></tbody>
-  </table>
-
-  <h3>반납요청 승인</h3>
+  </table>  <h3>반납요청 승인</h3>
   <table>
     <thead>
       <tr>
@@ -268,57 +219,51 @@
       </tr>
     </thead>
     <tbody id="return-approve-list"></tbody>
-  </table>
-
-  <h3>대여기록 출력</h3>
+  </table>  <h3>대여기록 출력</h3>
   <div class="panel">
     <div class="grid-row">
       <select id="print-year">
         <option value="2026">2026년</option>
         <option value="2027">2027년</option>
         <option value="2028">2028년</option>
-      </select>
+      </select><select id="print-month">
+    <option value="1">1월</option>
+    <option value="2">2월</option>
+    <option value="3">3월</option>
+    <option value="4">4월</option>
+    <option value="5">5월</option>
+    <option value="6">6월</option>
+    <option value="7">7월</option>
+    <option value="8">8월</option>
+    <option value="9">9월</option>
+    <option value="10">10월</option>
+    <option value="11">11월</option>
+    <option value="12">12월</option>
+  </select>
 
-      <select id="print-month">
-        <option value="1">1월</option>
-        <option value="2">2월</option>
-        <option value="3">3월</option>
-        <option value="4">4월</option>
-        <option value="5">5월</option>
-        <option value="6">6월</option>
-        <option value="7">7월</option>
-        <option value="8">8월</option>
-        <option value="9">9월</option>
-        <option value="10">10월</option>
-        <option value="11">11월</option>
-        <option value="12">12월</option>
-      </select>
+  <button id="print-all-month-btn" class="btn-basic">전체 기록 출력</button>
+</div>
 
-      <button id="print-all-month-btn" class="btn-basic">전체 기록 출력</button>
-    </div>
+<div class="grid-row">
+  <select id="print-age">
+    <option value="">연령 선택</option>
+    <option value="만1세">만1세</option>
+    <option value="만2세">만2세</option>
+    <option value="만3세">만3세</option>
+    <option value="만4세">만4세</option>
+    <option value="만5세">만5세</option>
+  </select>
 
-    <div class="grid-row">
-      <select id="print-age">
-        <option value="">연령 선택</option>
-        <option value="만1세">만1세</option>
-        <option value="만2세">만2세</option>
-        <option value="만3세">만3세</option>
-        <option value="만4세">만4세</option>
-        <option value="만5세">만5세</option>
-      </select>
+  <select id="print-class">
+    <option value="">반 선택</option>
+  </select>
 
-      <select id="print-class">
-        <option value="">반 선택</option>
-      </select>
+  <button id="print-class-month-btn" class="btn-basic">선택한 반 기록 출력</button>
+</div>
 
-      <button id="print-class-month-btn" class="btn-basic">선택한 반 기록 출력</button>
-    </div>
-  </div>
-
-  <h3>월별 대여기록 조회</h3>
-  <button id="load-record-month-btn" class="btn-basic">선택 월 대여기록 불러오기</button>
-
-  <table>
+  </div>  <h3>월별 대여기록 조회</h3>
+  <p class="notice danger-text">※ 월별 대여기록 삭제는 김혜인 교사에게 문의주세요.</p>
+  <button id="load-record-month-btn" class="btn-basic">선택 월 대여기록 불러오기</button>  <table>
     <thead>
       <tr>
         <th>대여일</th>
@@ -334,15 +279,10 @@
       </tr>
     </thead>
     <tbody id="monthly-record-list"></tbody>
-  </table>
+  </table><button id="manager-back-btn" class="btn-basic">돌아가기</button>
 
-  <button id="manager-back-btn" class="btn-basic">돌아가기</button>
-</div>
-
-<div id="admin-screen" class="box hidden">
-  <h2>관리자 페이지</h2>
-
-  <h3>회원가입 승인 요청</h3>
+</div><div id="admin-screen" class="box hidden">
+  <h2>관리자 페이지</h2>  <h3>회원가입 승인 요청</h3>
   <table>
     <thead>
       <tr>
@@ -353,9 +293,7 @@
       </tr>
     </thead>
     <tbody id="pending-users-list"></tbody>
-  </table>
-
-  <h3>반 변경 요청</h3>
+  </table>  <h3>반 변경 요청</h3>
   <table>
     <thead>
       <tr>
@@ -366,9 +304,7 @@
       </tr>
     </thead>
     <tbody id="class-change-list"></tbody>
-  </table>
-
-  <h3>도서담당자 권한 요청</h3>
+  </table>  <h3>도서담당자 권한 요청</h3>
   <table>
     <thead>
       <tr>
@@ -379,9 +315,7 @@
       </tr>
     </thead>
     <tbody id="manager-request-list"></tbody>
-  </table>
-
-  <h3>현재 도서담당자 목록</h3>
+  </table>  <h3>현재 도서담당자 목록</h3>
   <table>
     <thead>
       <tr>
@@ -393,12 +327,22 @@
       </tr>
     </thead>
     <tbody id="current-manager-list"></tbody>
-  </table>
-
-  <h3>삭제 도서 복구</h3>
-  <button id="load-deleted-books-btn" class="btn-basic">삭제 도서 목록 불러오기</button>
-
+  </table>  <h3>현재 사용자 목록</h3>
+  <button id="load-user-list-btn" class="btn-basic">사용자 목록 불러오기</button>
   <table>
+    <thead>
+      <tr>
+        <th>이름</th>
+        <th>아이디</th>
+        <th>반</th>
+        <th>권한</th>
+        <th>상태</th>
+        <th>관리</th>
+      </tr>
+    </thead>
+    <tbody id="user-list"></tbody>
+  </table>  <h3>삭제 도서 복구</h3>
+  <button id="load-deleted-books-btn" class="btn-basic">삭제 도서 목록 불러오기</button>  <table>
     <thead>
       <tr>
         <th>관리번호</th>
@@ -410,15 +354,10 @@
       </tr>
     </thead>
     <tbody id="deleted-book-list"></tbody>
-  </table>
+  </table><button id="admin-back-btn" class="btn-basic">돌아가기</button>
 
-  <button id="admin-back-btn" class="btn-basic">돌아가기</button>
-</div>
-
-<div id="book-manage-screen" class="box hidden">
-  <h2>도서관리</h2>
-
-  <h3>엑셀로 도서 등록</h3>
+</div><div id="book-manage-screen" class="box hidden">
+  <h2>도서관리</h2>  <h3>엑셀로 도서 등록</h3>
   <div class="panel">
     <button id="excel-upload-btn" class="btn-approve">엑셀 파일 선택 및 도서등록</button>
     <input
@@ -433,46 +372,36 @@
       엑셀 파일에 <strong>관리번호, 분류명, 도서명</strong> 열이 포함되어 있어야 합니다.
     </p>
     <div id="excel-upload-result" class="message"></div>
-  </div>
-
-  <h3>등록일 기준 도서 조회</h3>
+  </div>  <h3>등록일 기준 도서 조회</h3>
   <div class="panel">
     <div class="grid-row">
       <input id="book-start-date" type="date" />
       <input id="book-end-date" type="date" />
       <button id="search-book-date-btn" class="btn-basic">기간 조회</button>
     </div>
-  </div>
-
-  <h3>도서 검색 / 수정 / 삭제</h3>
+  </div>  <h3>도서 검색 / 수정 / 삭제</h3>
   <div class="panel">
     <div class="book-search-row">
       <input id="manage-book-search" placeholder="관리번호 / 도서명 / 분류명 검색" />
       <button id="manage-book-search-btn" class="btn-basic">도서 검색</button>
-    </div>
+    </div><table>
+  <thead>
+    <tr>
+      <th>관리번호</th>
+      <th>분류명</th>
+      <th>도서명</th>
+      <th>상태</th>
+      <th>등록일</th>
+      <th>수정</th>
+      <th>삭제</th>
+    </tr>
+  </thead>
+  <tbody id="manage-book-list"></tbody>
+</table>
 
-    <table>
-      <thead>
-        <tr>
-          <th>관리번호</th>
-          <th>분류명</th>
-          <th>도서명</th>
-          <th>상태</th>
-          <th>등록일</th>
-          <th>수정</th>
-          <th>삭제</th>
-        </tr>
-      </thead>
-      <tbody id="manage-book-list"></tbody>
-    </table>
-  </div>
+  </div><button id="book-manage-back-btn" class="btn-basic">돌아가기</button>
 
-  <button id="book-manage-back-btn" class="btn-basic">돌아가기</button>
-</div>
-
-<div id="print-area" class="hidden"></div>
-
-<script>
+</div><div id="print-area" class="hidden"></div><script>
 const supabaseUrl = "https://vohcugxfwxdvkbcpjcgl.supabase.co";
 const supabaseKey = "sb_publishable_Q0cXaglzBaz9Py2oct_NTQ_vMHsUeSQ";
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
@@ -482,7 +411,6 @@ let currentPage = 1;
 let pageSize = 20;
 let totalBooks = 0;
 let currentKeyword = "";
-
 let logoutTimer = null;
 let countdownTimer = null;
 let remainingSeconds = 30 * 60;
@@ -500,6 +428,14 @@ function getRoleName(role) {
   if (role === "admin") return "관리자";
   if (role === "manager") return "도서담당자";
   return "선생님";
+}
+
+function getApprovalStatusName(status) {
+  if (status === "approved") return "승인";
+  if (status === "pending") return "대기";
+  if (status === "rejected") return "거절";
+  if (status === "inactive") return "비활성화";
+  return status || "-";
 }
 
 function getStatusName(status) {
@@ -544,16 +480,16 @@ function showScreen(screenId, addHistory = true) {
   const contact = document.getElementById("login-contact");
   if (contact) contact.style.display = screenId === "login-screen" ? "block" : "none";
 
-  if (addHistory) {
-    history.pushState({ screenId }, "", location.href);
-  }
+  if (addHistory) history.pushState({ screenId }, "", location.href);
 }
 
-function updateClassOptions(ageId, classId) {
+function updateClassOptions(ageId, classId, includeAll = false) {
   const age = document.getElementById(ageId).value;
   const classSelect = document.getElementById(classId);
-  classSelect.innerHTML = `<option value="">반 선택</option>`;
+  classSelect.innerHTML = includeAll ? `<option value="">반 전체</option>` : `<option value="">반 선택</option>`;
+
   if (!classMap[age]) return;
+
   classMap[age].forEach(cls => {
     classSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
   });
@@ -581,8 +517,7 @@ function updateCountdownDisplay() {
   if (!countdownEl || !currentUser) return;
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = remainingSeconds % 60;
-  countdownEl.innerText =
-    `자동 로그아웃 ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  countdownEl.innerText = `자동 로그아웃 ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function resetAutoLogoutTimer() {
@@ -678,6 +613,11 @@ async function login() {
     return;
   }
 
+  if (data.approval_status === "inactive") {
+    setMessage("login-message", "비활성화된 계정입니다. 관리자에게 문의해주세요.", "red");
+    return;
+  }
+
   if (data.approval_status === "rejected") {
     setMessage("login-message", "회원가입 신청이 거절되었습니다. 관리자에게 문의해주세요.", "red");
     return;
@@ -694,8 +634,7 @@ async function login() {
 }
 
 function afterLoginSuccess() {
-  document.getElementById("user-info").innerText =
-    `${currentUser.name} / ${currentUser.class_name} / ${getRoleName(currentUser.role)}`;
+  document.getElementById("user-info").innerText = `${currentUser.name} / ${currentUser.class_name} / ${getRoleName(currentUser.role)}`;
 
   document.getElementById("manager-page-btn").classList.add("hidden");
   document.getElementById("admin-page-btn").classList.add("hidden");
@@ -731,13 +670,9 @@ function logout() {
 }
 
 window.addEventListener("popstate", (event) => {
-  if (event.state && event.state.screenId) {
-    showScreen(event.state.screenId, false);
-  } else if (currentUser) {
-    showScreen("app-screen", false);
-  } else {
-    showScreen("login-screen", false);
-  }
+  if (event.state && event.state.screenId) showScreen(event.state.screenId, false);
+  else if (currentUser) showScreen("app-screen", false);
+  else showScreen("login-screen", false);
 });
 
 history.replaceState({ screenId: "login-screen" }, "", location.href);
@@ -784,11 +719,8 @@ function openProfile() {
   document.getElementById("profile-role").innerText = getRoleName(currentUser.role);
   document.getElementById("profile-message").innerText = "";
 
-  if (currentUser.role === "teacher") {
-    document.getElementById("request-manager-btn").classList.remove("hidden");
-  } else {
-    document.getElementById("request-manager-btn").classList.add("hidden");
-  }
+  if (currentUser.role === "teacher") document.getElementById("request-manager-btn").classList.remove("hidden");
+  else document.getElementById("request-manager-btn").classList.add("hidden");
 
   showScreen("profile-screen");
 }
@@ -926,21 +858,21 @@ function renderBooks(books) {
 
     let rentalButton = "-";
     let returnButton = "-";
-    const isMine = book.current_user_id === currentUser.id;
+    const isSameClass = book.current_class === currentUser.class_name;
 
     if (statusText === "대여가능") {
       rentalButton = `<button class="btn-reserve" onclick="reserveBook('${book.id}')">대여예약</button>`;
     }
 
-    if (statusText === "대여예약중" && isMine) {
+    if (statusText === "대여예약중" && isSameClass) {
       rentalButton = `<button class="btn-cancel" onclick="cancelReservation('${book.id}')">예약취소</button>`;
     }
 
-    if (statusText === "대여중" && isMine) {
+    if (statusText === "대여중" && isSameClass) {
       returnButton = `<button class="btn-return" onclick="requestReturn('${book.id}')">반납요청</button>`;
     }
 
-    if (statusText === "반납요청중" && isMine) {
+    if (statusText === "반납요청중" && isSameClass) {
       returnButton = `<button class="btn-wait" disabled>반납대기</button>`;
     }
 
@@ -972,9 +904,7 @@ function renderPagination() {
   const endPage = Math.min(totalPages, currentPage + 3);
 
   for (let i = startPage; i <= endPage; i++) {
-    pageButtons.innerHTML += `
-      <button class="${i === currentPage ? "active" : ""}" onclick="goToPage(${i})">${i}</button>
-    `;
+    pageButtons.innerHTML += `<button class="${i === currentPage ? "active" : ""}" onclick="goToPage(${i})">${i}</button>`;
   }
 }
 
@@ -1037,7 +967,7 @@ async function cancelReservation(bookId) {
       current_user_id: null
     })
     .eq("id", bookId)
-    .eq("current_user_id", currentUser.id);
+    .eq("current_class", currentUser.class_name);
 
   if (error) {
     alert("예약취소 실패: " + error.message);
@@ -1048,7 +978,7 @@ async function cancelReservation(bookId) {
     .from("rental_records")
     .delete()
     .eq("book_id", bookId)
-    .eq("user_id", currentUser.id)
+    .eq("class_name", currentUser.class_name)
     .eq("status", "reserved");
 
   alert("예약이 취소되었습니다.");
@@ -1062,7 +992,7 @@ async function requestReturn(bookId) {
     .from("books")
     .update({ status: "return_requested" })
     .eq("id", bookId)
-    .eq("current_user_id", currentUser.id);
+    .eq("current_class", currentUser.class_name);
 
   if (error) {
     alert("반납요청 실패: " + error.message);
@@ -1077,7 +1007,7 @@ async function requestReturn(bookId) {
       return_requested_at: new Date().toISOString()
     })
     .eq("book_id", bookId)
-    .eq("user_id", currentUser.id)
+    .eq("class_name", currentUser.class_name)
     .eq("status", "borrowed");
 
   alert("반납요청이 완료되었습니다.");
@@ -1089,15 +1019,15 @@ async function loadMyBooks() {
 
   const { data, error } = await supabaseClient
     .from("books")
-    .select('id,"관리번호","도서명",status,current_user_id')
-    .eq("current_user_id", currentUser.id)
+    .select('id,"관리번호","도서명",status,current_class,current_user_id')
+    .eq("current_class", currentUser.class_name)
     .or("is_deleted.is.false,is_deleted.is.null");
 
   const list = document.getElementById("my-books-list");
   list.innerHTML = "";
 
   if (error || !data || !data.length) {
-    list.innerHTML = `<tr><td colspan="5">현재 예약 또는 대여중인 도서가 없습니다.</td></tr>`;
+    list.innerHTML = `<tr><td colspan="6">현재 ${currentUser.class_name}에서 예약 또는 대여중인 도서가 없습니다.</td></tr>`;
   } else {
     data.forEach(book => {
       const statusText = getStatusName(book.status);
@@ -1121,6 +1051,7 @@ async function loadMyBooks() {
           <td>${book["관리번호"] || ""}</td>
           <td>${book["도서명"] || ""}</td>
           <td>${statusText}</td>
+          <td>${book.current_class || "-"}</td>
           <td>${rentalBtn}</td>
           <td>${returnBtn}</td>
         </tr>
@@ -1138,7 +1069,7 @@ async function loadMyRejections() {
   const { data: records, error } = await supabaseClient
     .from("rental_records")
     .select("*")
-    .eq("user_id", currentUser.id)
+    .eq("class_name", currentUser.class_name)
     .in("status", ["rental_rejected", "return_rejected"])
     .order("created_at", { ascending: false });
 
@@ -1155,12 +1086,8 @@ async function loadMyRejections() {
       .maybeSingle();
 
     const type = record.status === "rental_rejected" ? "대여반려" : "반납반려";
-    const reason = record.status === "rental_rejected"
-      ? record.reject_reason
-      : record.return_reject_reason;
-    const rejectedAt = record.status === "rental_rejected"
-      ? record.rejected_at
-      : record.return_rejected_at;
+    const reason = record.status === "rental_rejected" ? record.reject_reason : record.return_reject_reason;
+    const rejectedAt = record.status === "rental_rejected" ? record.rejected_at : record.return_rejected_at;
 
     list.innerHTML += `
       <tr>
@@ -1199,6 +1126,7 @@ async function openAdminPage() {
   loadClassChangeRequests();
   loadManagerRequests();
   loadCurrentManagers();
+  loadUserList();
 }
 
 async function openBookManagePage() {
@@ -1206,13 +1134,22 @@ async function openBookManagePage() {
   showScreen("book-manage-screen");
 }
 
+function applyManagerClassFilter(query) {
+  const selectedClass = document.getElementById("manager-filter-class")?.value;
+  if (selectedClass) return query.eq("current_class", selectedClass);
+  return query;
+}
+
 async function loadRentalApproveList() {
-  const { data } = await supabaseClient
+  let query = supabaseClient
     .from("books")
     .select('id,"관리번호","도서명",current_class,status,current_user_id')
     .eq("status", "reserved")
     .or("is_deleted.is.false,is_deleted.is.null");
 
+  query = applyManagerClassFilter(query);
+
+  const { data } = await query;
   const list = document.getElementById("rental-approve-list");
   list.innerHTML = "";
 
@@ -1223,7 +1160,6 @@ async function loadRentalApproveList() {
 
   for (const book of data) {
     const borrowerName = await getUserNameById(book.current_user_id);
-
     list.innerHTML += `
       <tr>
         <td>${book["관리번호"] || ""}</td>
@@ -1240,18 +1176,11 @@ async function loadRentalApproveList() {
 }
 
 async function approveRental(bookId) {
-  await supabaseClient
-    .from("books")
-    .update({ status: "borrowed" })
-    .eq("id", bookId);
+  await supabaseClient.from("books").update({ status: "borrowed" }).eq("id", bookId);
 
   await supabaseClient
     .from("rental_records")
-    .update({
-      status: "borrowed",
-      approved_at: new Date().toISOString(),
-      approved_by: currentUser.id
-    })
+    .update({ status: "borrowed", approved_at: new Date().toISOString(), approved_by: currentUser.id })
     .eq("book_id", bookId)
     .eq("status", "reserved");
 
@@ -1268,11 +1197,7 @@ async function rejectRental(bookId) {
 
   await supabaseClient
     .from("books")
-    .update({
-      status: "available",
-      current_class: null,
-      current_user_id: null
-    })
+    .update({ status: "available", current_class: null, current_user_id: null })
     .eq("id", bookId);
 
   const { error } = await supabaseClient
@@ -1297,12 +1222,15 @@ async function rejectRental(bookId) {
 }
 
 async function loadReturnApproveList() {
-  const { data } = await supabaseClient
+  let query = supabaseClient
     .from("books")
     .select('id,"관리번호","도서명",current_class,status,current_user_id')
     .eq("status", "return_requested")
     .or("is_deleted.is.false,is_deleted.is.null");
 
+  query = applyManagerClassFilter(query);
+
+  const { data } = await query;
   const list = document.getElementById("return-approve-list");
   list.innerHTML = "";
 
@@ -1313,7 +1241,6 @@ async function loadReturnApproveList() {
 
   for (const book of data) {
     const returnUserName = await getUserNameById(book.current_user_id);
-
     list.innerHTML += `
       <tr>
         <td>${book["관리번호"] || ""}</td>
@@ -1332,20 +1259,12 @@ async function loadReturnApproveList() {
 async function approveReturn(bookId) {
   await supabaseClient
     .from("books")
-    .update({
-      status: "available",
-      current_class: null,
-      current_user_id: null
-    })
+    .update({ status: "available", current_class: null, current_user_id: null })
     .eq("id", bookId);
 
   await supabaseClient
     .from("rental_records")
-    .update({
-      status: "returned",
-      returned_at: new Date().toISOString(),
-      return_approved_by: currentUser.id
-    })
+    .update({ status: "returned", returned_at: new Date().toISOString(), return_approved_by: currentUser.id })
     .eq("book_id", bookId)
     .eq("status", "return_requested");
 
@@ -1360,10 +1279,7 @@ async function rejectReturn(bookId) {
     return;
   }
 
-  await supabaseClient
-    .from("books")
-    .update({ status: "borrowed" })
-    .eq("id", bookId);
+  await supabaseClient.from("books").update({ status: "borrowed" }).eq("id", bookId);
 
   const { error } = await supabaseClient
     .from("rental_records")
@@ -1388,13 +1304,7 @@ async function rejectReturn(bookId) {
 
 async function getUserNameById(userId) {
   if (!userId) return "-";
-
-  const { data } = await supabaseClient
-    .from("users")
-    .select("name")
-    .eq("id", userId)
-    .maybeSingle();
-
+  const { data } = await supabaseClient.from("users").select("name").eq("id", userId).maybeSingle();
   return data?.name || "-";
 }
 
@@ -1451,6 +1361,10 @@ async function loadMonthlyRecordList() {
   }
 
   records.forEach(record => {
+    const resetCell = currentUser.role === "admin"
+      ? `<button class="btn-danger" onclick="deleteRentalRecord('${record.id}')">초기화</button>`
+      : `관리자 문의`;
+
     list.innerHTML += `
       <tr>
         <td>${formatDate(record.approved_at)}</td>
@@ -1462,13 +1376,18 @@ async function loadMonthlyRecordList() {
         <td>${formatDate(record.returned_at)}</td>
         <td>${record.returnedByName}</td>
         <td>${record.returnApprovedByName}</td>
-        <td><button class="btn-danger" onclick="deleteRentalRecord('${record.id}')">초기화</button></td>
+        <td>${resetCell}</td>
       </tr>
     `;
   });
 }
 
 async function deleteRentalRecord(recordId) {
+  if (currentUser.role !== "admin") {
+    alert("월별 대여기록 삭제는 김혜인 교사에게 문의주세요.");
+    return;
+  }
+
   if (!confirm("이 대여기록을 삭제하고 도서를 대여가능 상태로 초기화하시겠습니까?")) return;
 
   const { data: record, error: recordError } = await supabaseClient
@@ -1484,17 +1403,10 @@ async function deleteRentalRecord(recordId) {
 
   await supabaseClient
     .from("books")
-    .update({
-      status: "available",
-      current_class: null,
-      current_user_id: null
-    })
+    .update({ status: "available", current_class: null, current_user_id: null })
     .eq("id", record.book_id);
 
-  const { error } = await supabaseClient
-    .from("rental_records")
-    .delete()
-    .eq("id", recordId);
+  const { error } = await supabaseClient.from("rental_records").delete().eq("id", recordId);
 
   if (error) {
     alert("기록삭제 실패: " + error.message);
@@ -1511,9 +1423,7 @@ async function printMonthlyRecords(className = null) {
   const records = await getMonthlyRecords(className);
   const printArea = document.getElementById("print-area");
 
-  const title = className
-    ? `${year}년 ${month + 1}월 ${className} 대여기록`
-    : `${year}년 ${month + 1}월 전체 대여기록`;
+  const title = className ? `${year}년 ${month + 1}월 ${className} 대여기록` : `${year}년 ${month + 1}월 전체 대여기록`;
 
   let rows = "";
 
@@ -1580,11 +1490,7 @@ function printClassMonthlyRecords() {
 }
 
 async function loadPendingUsers() {
-  const { data } = await supabaseClient
-    .from("users")
-    .select("*")
-    .eq("approval_status", "pending");
-
+  const { data } = await supabaseClient.from("users").select("*").eq("approval_status", "pending");
   const list = document.getElementById("pending-users-list");
   list.innerHTML = "";
 
@@ -1609,31 +1515,20 @@ async function loadPendingUsers() {
 }
 
 async function approveUser(userId) {
-  await supabaseClient
-    .from("users")
-    .update({ approval_status: "approved" })
-    .eq("id", userId);
-
+  await supabaseClient.from("users").update({ approval_status: "approved" }).eq("id", userId);
   loadPendingUsers();
+  loadUserList();
 }
 
 async function rejectUser(userId) {
   if (!confirm("이 회원가입 신청을 거절하시겠습니까?")) return;
-
-  await supabaseClient
-    .from("users")
-    .update({ approval_status: "rejected" })
-    .eq("id", userId);
-
+  await supabaseClient.from("users").update({ approval_status: "rejected" }).eq("id", userId);
   loadPendingUsers();
+  loadUserList();
 }
 
 async function loadClassChangeRequests() {
-  const { data } = await supabaseClient
-    .from("class_change_requests")
-    .select("*")
-    .eq("status", "pending");
-
+  const { data } = await supabaseClient.from("class_change_requests").select("*").eq("status", "pending");
   const list = document.getElementById("class-change-list");
   list.innerHTML = "";
 
@@ -1655,28 +1550,14 @@ async function loadClassChangeRequests() {
 }
 
 async function approveClassChange(requestId, userId, newClass) {
-  await supabaseClient
-    .from("users")
-    .update({ class_name: newClass })
-    .eq("id", userId);
-
-  await supabaseClient
-    .from("class_change_requests")
-    .update({
-      status: "approved",
-      processed_at: new Date().toISOString()
-    })
-    .eq("id", requestId);
-
+  await supabaseClient.from("users").update({ class_name: newClass }).eq("id", userId);
+  await supabaseClient.from("class_change_requests").update({ status: "approved", processed_at: new Date().toISOString() }).eq("id", requestId);
   loadClassChangeRequests();
+  loadUserList();
 }
 
 async function loadManagerRequests() {
-  const { data } = await supabaseClient
-    .from("manager_role_requests")
-    .select("*")
-    .eq("status", "pending");
-
+  const { data } = await supabaseClient.from("manager_role_requests").select("*").eq("status", "pending");
   const list = document.getElementById("manager-request-list");
   list.innerHTML = "";
 
@@ -1698,31 +1579,15 @@ async function loadManagerRequests() {
 }
 
 async function approveManagerRole(requestId, userId, newRole) {
-  await supabaseClient
-    .from("users")
-    .update({ role: newRole })
-    .eq("id", userId);
-
-  await supabaseClient
-    .from("manager_role_requests")
-    .update({
-      status: "approved",
-      approved_by: currentUser.id,
-      processed_at: new Date().toISOString()
-    })
-    .eq("id", requestId);
-
+  await supabaseClient.from("users").update({ role: newRole }).eq("id", userId);
+  await supabaseClient.from("manager_role_requests").update({ status: "approved", approved_by: currentUser.id, processed_at: new Date().toISOString() }).eq("id", requestId);
   loadManagerRequests();
   loadCurrentManagers();
+  loadUserList();
 }
 
 async function loadCurrentManagers() {
-  const { data, error } = await supabaseClient
-    .from("users")
-    .select("*")
-    .eq("role", "manager")
-    .eq("approval_status", "approved");
-
+  const { data, error } = await supabaseClient.from("users").select("*").eq("role", "manager").eq("approval_status", "approved");
   const list = document.getElementById("current-manager-list");
   list.innerHTML = "";
 
@@ -1752,10 +1617,7 @@ async function loadCurrentManagers() {
 async function changeManagerToTeacher(userId) {
   if (!confirm("이 도서담당자를 선생님 권한으로 변경하시겠습니까?")) return;
 
-  const { error } = await supabaseClient
-    .from("users")
-    .update({ role: "teacher" })
-    .eq("id", userId);
+  const { error } = await supabaseClient.from("users").update({ role: "teacher" }).eq("id", userId);
 
   if (error) {
     alert("권한 변경 실패: " + error.message);
@@ -1764,6 +1626,65 @@ async function changeManagerToTeacher(userId) {
 
   alert("선생님 권한으로 변경되었습니다.");
   loadCurrentManagers();
+  loadUserList();
+}
+
+async function loadUserList() {
+  const { data, error } = await supabaseClient.from("users").select("*").order("class_name", { ascending: true });
+  const list = document.getElementById("user-list");
+  list.innerHTML = "";
+
+  if (error || !data?.length) {
+    list.innerHTML = `<tr><td colspan="6">사용자가 없습니다.</td></tr>`;
+    return;
+  }
+
+  data.forEach(user => {
+    const manageButton = user.approval_status === "approved"
+      ? `<button class="btn-danger" onclick="deactivateUser('${user.id}')">비활성화</button>`
+      : user.approval_status === "inactive"
+        ? `<button class="btn-approve" onclick="activateUser('${user.id}')">재활성화</button>`
+        : "-";
+
+    list.innerHTML += `
+      <tr>
+        <td>${user.name}</td>
+        <td>${user.username}</td>
+        <td>${user.class_name}</td>
+        <td>${getRoleName(user.role)}</td>
+        <td>${getApprovalStatusName(user.approval_status)}</td>
+        <td>${manageButton}</td>
+      </tr>
+    `;
+  });
+}
+
+async function deactivateUser(userId) {
+  if (!confirm("이 사용자를 비활성화하시겠습니까? 비활성화된 계정은 로그인할 수 없습니다.")) return;
+
+  const { error } = await supabaseClient.from("users").update({ approval_status: "inactive" }).eq("id", userId);
+
+  if (error) {
+    alert("비활성화 실패: " + error.message);
+    return;
+  }
+
+  alert("사용자가 비활성화되었습니다.");
+  loadUserList();
+}
+
+async function activateUser(userId) {
+  if (!confirm("이 사용자를 다시 활성화하시겠습니까?")) return;
+
+  const { error } = await supabaseClient.from("users").update({ approval_status: "approved" }).eq("id", userId);
+
+  if (error) {
+    alert("재활성화 실패: " + error.message);
+    return;
+  }
+
+  alert("사용자가 재활성화되었습니다.");
+  loadUserList();
 }
 
 async function handleExcelUpload(event) {
@@ -1798,36 +1719,28 @@ async function handleExcelUpload(event) {
         continue;
       }
 
-      const { data: existingBook } = await supabaseClient
-        .from("books")
-        .select("id")
-        .eq("관리번호", bookNumber)
-        .maybeSingle();
+      const { data: existingBook } = await supabaseClient.from("books").select("id").eq("관리번호", bookNumber).maybeSingle();
 
       if (existingBook) {
         duplicateCount++;
         continue;
       }
 
-      const { error } = await supabaseClient
-        .from("books")
-        .insert([{
-          "관리번호": bookNumber,
-          "분류명": category,
-          "도서명": title,
-          status: "available",
-          current_class: null,
-          current_user_id: null,
-          is_deleted: false
-        }]);
+      const { error } = await supabaseClient.from("books").insert([{
+        "관리번호": bookNumber,
+        "분류명": category,
+        "도서명": title,
+        status: "available",
+        current_class: null,
+        current_user_id: null,
+        is_deleted: false
+      }]);
 
       if (error) errorCount++;
       else successCount++;
     }
 
-    const resultText =
-      `엑셀 등록 완료\n성공: ${successCount}권\n중복: ${duplicateCount}권\n필수값 누락: ${missingCount}권\n기타 오류: ${errorCount}권`;
-
+    const resultText = `엑셀 등록 완료\n성공: ${successCount}권\n중복: ${duplicateCount}권\n필수값 누락: ${missingCount}권\n기타 오류: ${errorCount}권`;
     setMessage("excel-upload-result", resultText);
     alert(resultText);
     loadBooks();
@@ -1925,14 +1838,11 @@ async function editBook(bookId, oldNumber, oldCategory, oldTitle) {
     return;
   }
 
-  const { error } = await supabaseClient
-    .from("books")
-    .update({
-      "관리번호": newNumber.trim(),
-      "분류명": newCategory.trim(),
-      "도서명": newTitle.trim()
-    })
-    .eq("id", bookId);
+  const { error } = await supabaseClient.from("books").update({
+    "관리번호": newNumber.trim(),
+    "분류명": newCategory.trim(),
+    "도서명": newTitle.trim()
+  }).eq("id", bookId);
 
   if (error) {
     alert("도서 수정 실패: " + error.message);
@@ -1952,14 +1862,11 @@ async function deleteBookSoft(bookId, status) {
 
   if (!confirm("이 도서를 삭제 처리하시겠습니까? 관리자 화면에서 복구할 수 있습니다.")) return;
 
-  const { error } = await supabaseClient
-    .from("books")
-    .update({
-      is_deleted: true,
-      deleted_at: new Date().toISOString(),
-      deleted_by: currentUser.id
-    })
-    .eq("id", bookId);
+  const { error } = await supabaseClient.from("books").update({
+    is_deleted: true,
+    deleted_at: new Date().toISOString(),
+    deleted_by: currentUser.id
+  }).eq("id", bookId);
 
   if (error) {
     alert("도서 삭제 처리 실패: " + error.message);
@@ -1995,7 +1902,6 @@ async function loadDeletedBooks() {
 
   for (const book of data) {
     const deletedByName = await getUserNameById(book.deleted_by);
-
     list.innerHTML += `
       <tr>
         <td>${book["관리번호"] || ""}</td>
@@ -2012,14 +1918,11 @@ async function loadDeletedBooks() {
 async function restoreDeletedBook(bookId) {
   if (!confirm("이 도서를 복구하시겠습니까?")) return;
 
-  const { error } = await supabaseClient
-    .from("books")
-    .update({
-      is_deleted: false,
-      deleted_at: null,
-      deleted_by: null
-    })
-    .eq("id", bookId);
+  const { error } = await supabaseClient.from("books").update({
+    is_deleted: false,
+    deleted_at: null,
+    deleted_by: null
+  }).eq("id", bookId);
 
   if (error) {
     alert("복구 실패: " + error.message);
@@ -2040,6 +1943,7 @@ document.getElementById("signup-age").addEventListener("change", () => updateCla
 document.getElementById("find-age").addEventListener("change", () => updateClassOptions("find-age", "find-class"));
 document.getElementById("change-age").addEventListener("change", () => updateClassOptions("change-age", "change-class"));
 document.getElementById("print-age").addEventListener("change", () => updateClassOptions("print-age", "print-class"));
+document.getElementById("manager-filter-age").addEventListener("change", () => updateClassOptions("manager-filter-age", "manager-filter-class", true));
 
 document.getElementById("signup-btn").addEventListener("click", signup);
 document.getElementById("find-id-submit-btn").addEventListener("click", findId);
@@ -2054,6 +1958,10 @@ document.getElementById("my-books-back-btn").addEventListener("click", () => sho
 
 document.getElementById("manager-page-btn").addEventListener("click", openManagerPage);
 document.getElementById("manager-back-btn").addEventListener("click", () => showScreen("app-screen"));
+document.getElementById("manager-filter-btn").addEventListener("click", () => {
+  loadRentalApproveList();
+  loadReturnApproveList();
+});
 
 document.getElementById("admin-page-btn").addEventListener("click", openAdminPage);
 document.getElementById("admin-back-btn").addEventListener("click", () => showScreen("app-screen"));
@@ -2072,13 +1980,12 @@ document.getElementById("print-all-month-btn").addEventListener("click", () => p
 document.getElementById("print-class-month-btn").addEventListener("click", printClassMonthlyRecords);
 document.getElementById("load-record-month-btn").addEventListener("click", loadMonthlyRecordList);
 
-document.getElementById("excel-upload-btn").addEventListener("click", () => {
-  document.getElementById("excel-upload").click();
-});
+document.getElementById("excel-upload-btn").addEventListener("click", () => document.getElementById("excel-upload").click());
 document.getElementById("excel-upload").addEventListener("change", handleExcelUpload);
 document.getElementById("manage-book-search-btn").addEventListener("click", searchManageBooks);
 document.getElementById("search-book-date-btn").addEventListener("click", searchBooksByDate);
 document.getElementById("load-deleted-books-btn").addEventListener("click", loadDeletedBooks);
+document.getElementById("load-user-list-btn").addEventListener("click", loadUserList);
 
 document.getElementById("page-size").addEventListener("change", (e) => {
   pageSize = Number(e.target.value);
@@ -2102,7 +2009,5 @@ document.getElementById("search").addEventListener("input", (e) => {
 
 setDefaultPrintMonth();
 restoreLogin();
-</script>
-
-</body>
+</script></body>
 </html>
